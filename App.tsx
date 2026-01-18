@@ -1,0 +1,965 @@
+import React, { useState, useEffect } from 'react';
+import { UserRole, Issue, IssueStatus, IssueCategory, User, ShopItem } from './types';
+import { MOCK_ISSUES, MOCK_USER, SEVILLA_CENTER, PREMIUM_COST_POINTS } from './constants';
+import IssueMap from './components/IssueMap';
+import StatsPanel from './components/StatsPanel';
+import LandingPage from './components/LandingPage';
+import AuthScreen from './components/AuthScreen';
+import ProfilePanel from './components/ProfilePanel';
+import ShopPanel from './components/ShopPanel';
+import IssueDetailModal from './components/IssueDetailModal';
+import { analyzeReportText, validateIssueEvidence } from './services/geminiService';
+import {
+  MapPin,
+  List,
+  PlusCircle,
+  User as UserIcon,
+  LogOut,
+  BarChart2,
+  Filter,
+  CheckCircle,
+  AlertCircle,
+  Clock,
+  Search,
+  Wand2,
+  Camera,
+  Map as MapIcon,
+  Home,
+  ShoppingBag,
+  Zap,
+  Sparkles,
+  Crown
+} from 'lucide-react';
+import { db } from './firebaseConfig';
+import { doc, setDoc, collection, addDoc } from 'firebase/firestore';
+import { debounce } from 'lodash';
+import { signInWithPopup } from "firebase/auth";
+import { auth, googleProvider, facebookProvider } from "./firebaseConfig";
+
+// --- Sub-components for cleaner App.tsx ---
+
+const Header = ({ user, activeTab, setActiveTab, onLogout, onLoginClick }: any) => {
+  const experience = user?.experience || 0;
+  const level = Math.floor(experience / 100) + 1;
+  const expCurrent = Math.max(0, experience - (level - 1) * 100);
+  const expTotal = 100;
+
+  const prevLevelRef = React.useRef(level);
+  const [showLevelUp, setShowLevelUp] = React.useState(false);
+
+  React.useEffect(() => {
+    const curr = Math.floor((user?.experience || 0) / 100) + 1;
+    if (curr > prevLevelRef.current) {
+      setShowLevelUp(true);
+      const t = setTimeout(() => setShowLevelUp(false), 2400);
+      // update prev after timeout start
+      prevLevelRef.current = curr;
+      return () => clearTimeout(t);
+    }
+    prevLevelRef.current = curr;
+  }, [user?.experience]);
+  return (
+    <header className="fixed top-0 left-0 right-0 z-50 bg-primary/95 backdrop-blur-md shadow-lg border-b border-white/5 transition-all duration-300">
+    <div className="container mx-auto px-4 py-3 flex justify-between items-center">
+      <div className="flex items-center gap-3 hover:opacity-80 transition cursor-pointer group" onClick={() => setActiveTab('home')}>
+        <img src="/logo.png" alt="Reporta Ya Logo" className="h-12 object-contain" />
+      </div>
+
+      <nav className="flex items-center gap-1 md:gap-2 bg-white/5 p-1 rounded-full border border-white/10 backdrop-blur-sm">
+        {/* Navigation for everyone */}
+        <button
+          onClick={() => setActiveTab('home')}
+          className={`p-2.5 rounded-full transition-all duration-200 ${activeTab === 'home' ? 'bg-secondary text-primary shadow-md' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}
+          title="Inicio"
+        >
+          <Home size={18} />
+        </button>
+
+        <button
+          onClick={() => setActiveTab('map')}
+          className={`p-2.5 rounded-full transition-all duration-200 ${activeTab === 'map' ? 'bg-secondary text-primary shadow-md' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}
+          title="Mapa de Incidencias"
+        >
+          <MapPin size={18} />
+        </button>
+
+        {/* Only Citizen can report */}
+        {(user?.role === UserRole.CITIZEN || !user) && (
+          <button
+            onClick={() => {
+              if (!user) onLoginClick();
+              else setActiveTab('create');
+            }}
+            className={`p-2.5 rounded-full transition-all duration-200 ${activeTab === 'create' ? 'bg-secondary text-primary shadow-md' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}
+            title="Crear Reporte"
+          >
+            <PlusCircle size={18} />
+          </button>
+        )}
+
+        {/* Only Admin can see stats */}
+        {user?.role === UserRole.ADMIN && (
+          <button
+            onClick={() => setActiveTab('admin')}
+            className={`p-2.5 rounded-full transition-all duration-200 ${activeTab === 'admin' ? 'bg-secondary text-primary shadow-md' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}
+            title="Panel Admin"
+          >
+            <BarChart2 size={18} />
+          </button>
+        )}
+
+        {/* Shop for Citizens */}
+        {user?.role === UserRole.CITIZEN && (
+          <button
+            onClick={() => setActiveTab('shop')}
+            className={`p-2.5 rounded-full transition-all duration-200 ${activeTab === 'shop' ? 'bg-secondary text-primary shadow-md' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}
+            title="Tienda de Puntos"
+          >
+            <ShoppingBag size={18} />
+          </button>
+        )}
+      </nav>
+
+      <div className="flex items-center gap-3">
+        {user ? (
+          <>
+            <button
+              onClick={() => setActiveTab('profile')}
+              className={`flex items-center gap-3 pl-1 pr-3 py-1 rounded-full transition group border border-transparent ${activeTab === 'profile' ? 'bg-white/10 border-white/20' : 'hover:bg-white/5'}`}
+            >
+              <div className="relative">
+                <img
+                  src={user.avatar || `https://ui-avatars.com/api/?name=${user.name}&background=random`}
+                  alt="avatar"
+                  className="w-9 h-9 rounded-full border-2 border-white/50 object-cover"
+                />
+                {/* Online Dot */}
+                <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-400 rounded-full border-2 border-primary"></div>
+                {showLevelUp && (
+                  <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center text-white shadow-lg animate-bounce z-50">
+                    <Zap size={14} />
+                  </div>
+                )}
+                {user.premium && (
+                  <div className="absolute -top-2 left-8 w-6 h-6 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 shadow-md z-40">
+                    <Crown size={12} />
+                  </div>
+                )}
+              </div>
+
+              <div className="hidden md:flex flex-col items-center justify-center leading-tight">
+                <div className="text-sm font-bold text-white group-hover:text-secondary transition text-center">{user.name.split(' ')[0]}</div>
+
+                {user.role === UserRole.CITIZEN && (
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-[10px] bg-secondary/20 text-secondary px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Lvl {level}</span>
+                    <span className="text-[11px] text-white/70">{expCurrent}/{expTotal} EXP</span>
+                  </div>
+                )}
+              </div>
+            </button>
+            <button onClick={onLogout} className="p-2.5 hover:bg-red-500/20 text-white/60 hover:text-red-400 rounded-full transition" title="Cerrar Sesión">
+              <LogOut size={18} />
+            </button>
+          </>
+        ) : (
+          <button
+            onClick={onLoginClick}
+            className="flex items-center gap-2 bg-white text-primary px-5 py-2 rounded-full font-bold transition hover:bg-gray-100 shadow-md text-sm"
+          >
+            <span className="hidden sm:inline">Entrar</span>
+          </button>
+        )}
+      </div>
+    </div>
+  </header>
+  );
+};
+
+const ReportForm = ({ onSubmit, onCancel }: { onSubmit: (data: Partial<Issue>) => void, onCancel: () => void }) => {
+  const [title, setTitle] = useState('');
+  const [desc, setDesc] = useState('');
+  const [category, setCategory] = useState<IssueCategory>(IssueCategory.OTHER);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [location, setLocation] = useState<{ lat: number, lng: number } | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+  const [evidenceStatus, setEvidenceStatus] = useState<'idle' | 'validating' | 'valid' | 'invalid'>('idle');
+  const [evidenceConfidence, setEvidenceConfidence] = useState<number | null>(null);
+  const [evidenceReason, setEvidenceReason] = useState<string | null>(null);
+  const [street, setStreet] = useState('');
+  const [suggestions, setSuggestions] = useState<{ label: string; lat: number; lon: number }[]>([]);
+
+  const handleAIAnalysis = async () => {
+    if (!desc) return;
+    setIsAnalyzing(true);
+    try {
+      const result = await analyzeReportText(desc);
+      setTitle(result.suggestedTitle);
+      setCategory(result.category);
+    } catch (e) {
+      console.error("AI Analysis failed");
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleGeolocation = () => {
+    setLocating(true);
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+          setLocating(false);
+        },
+        () => {
+          alert('No se pudo obtener la ubicación. Usando el centro de Sevilla por defecto.');
+          setLocation(SEVILLA_CENTER);
+          setLocating(false);
+        }
+      );
+    } else {
+      setLocation(SEVILLA_CENTER);
+      setLocating(false);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit({
+      title,
+      description: desc,
+      category,
+      location: location || SEVILLA_CENTER,
+      imageUrl: previewUrl || undefined
+    });
+  };
+
+  const fetchSuggestions = async (query: string) => {
+    if (!query) {
+      setSuggestions([]);
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}+Sevilla&format=json&addressdetails=1&limit=5&countrycodes=es`
+      );
+      const data = await response.json();
+      const addresses = data.map((item: any) => ({
+        label: item.display_name,
+        lat: parseFloat(item.lat),
+        lon: parseFloat(item.lon),
+      }));
+      setSuggestions(addresses);
+    } catch (error) {
+      console.error('Error fetching address suggestions:', error);
+    }
+  };
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => fetchSuggestions(street), 300);
+    return () => clearTimeout(timeoutId);
+  }, [street]);
+
+  const handleSuggestionClick = (suggestion: { label: string; lat: number; lon: number }) => {
+    setStreet(suggestion.label);
+    setLocation({ lat: suggestion.lat, lng: suggestion.lon });
+    setSuggestions([]);
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto bg-white p-8 rounded-3xl shadow-xl mt-6 border border-gray-100 animate-fade-in">
+      <h2 className="text-2xl font-black text-slate-800 mb-6 flex items-center gap-3 pb-4 border-b">
+        <div className="bg-primary/10 p-3 rounded-xl text-primary">
+          <PlusCircle size={24} />
+        </div>
+        Nuevo Reporte
+      </h2>
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+
+        <div>
+          <label className="block text-sm font-bold text-gray-700 mb-2">Fotografía</label>
+          <div
+            onClick={() => fileInputRef.current?.click()}
+            onKeyDown={(e) => { if (e.key === 'Enter') fileInputRef.current?.click(); }}
+            role="button"
+            tabIndex={0}
+            className="border-2 border-dashed border-gray-300 rounded-2xl p-8 flex flex-col items-center justify-center text-gray-500 hover:bg-gray-50 hover:border-primary transition cursor-pointer group"
+          >
+            <div className="bg-gray-100 p-4 rounded-full mb-3 group-hover:bg-primary/10 group-hover:text-primary transition">
+              <Camera size={32} />
+            </div>
+            {previewUrl ? (
+              <div className="w-full max-w-md">
+                <img src={previewUrl} alt="preview" className="w-full h-48 object-cover rounded-md mb-3" />
+                <div className="flex items-center justify-between text-sm text-gray-600">
+                  <span>{selectedFileName}</span>
+                  <div className="flex items-center gap-3">
+                    {evidenceStatus === 'validating' && (
+                      <span className="text-xs text-gray-500">Validando...</span>
+                    )}
+                    {evidenceStatus === 'valid' && (
+                      <span className="text-xs text-green-600 font-bold">✓ Evidencia válida ({(evidenceConfidence || 0).toFixed(2)})</span>
+                    )}
+                    {evidenceStatus === 'invalid' && (
+                      <span className="text-xs text-red-600 font-bold">✕ No coincide</span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setPreviewUrl(null); setSelectedFileName(null); setEvidenceStatus('idle'); setEvidenceConfidence(null); setEvidenceReason(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
+                      className="text-red-500 font-bold"
+                    >
+                      Eliminar
+                    </button>
+                  </div>
+                </div>
+                {evidenceReason && (
+                  <div className="text-xs text-gray-500 mt-2">{evidenceReason}</div>
+                )}
+              </div>
+            ) : (
+              <>
+                <span className="text-sm font-medium">Haz clic o arrastra una foto</span>
+              </>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              accept="image/*"
+              onChange={(e) => {
+                const f = e.target.files && e.target.files[0];
+                if (!f) return;
+                setSelectedFileName(f.name);
+                const reader = new FileReader();
+                reader.onload = async () => {
+                  const dataUrl = reader.result as string;
+                  setPreviewUrl(dataUrl);
+
+                  // Validate evidence via Gemini service (simulated)
+                  try {
+                    setEvidenceStatus('validating');
+                    setEvidenceConfidence(null);
+                    setEvidenceReason(null);
+                    const res = await validateIssueEvidence(dataUrl, category);
+                    if (res.isValid) {
+                      setEvidenceStatus('valid');
+                      setEvidenceConfidence(res.confidence);
+                      setEvidenceReason(res.reason);
+                    } else {
+                      setEvidenceStatus('invalid');
+                      setEvidenceConfidence(res.confidence);
+                      setEvidenceReason(res.reason);
+                    }
+                  } catch (err) {
+                    setEvidenceStatus('invalid');
+                    setEvidenceReason('Error al validar la imagen');
+                  }
+                };
+                reader.readAsDataURL(f);
+              }}
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-bold text-gray-700 mb-2">Descripción</label>
+          <div className="relative">
+            <textarea
+              value={desc}
+              onChange={(e) => setDesc(e.target.value)}
+              className="w-full p-4 border border-gray-300 rounded-xl focus:ring-4 focus:ring-primary/20 focus:border-primary transition h-32 outline-none resize-none"
+              placeholder="Describe el problema (ej. Farola rota en Alameda...)"
+              required
+            />
+            <button
+              type="button"
+              onClick={handleAIAnalysis}
+              disabled={!desc || isAnalyzing}
+              className="absolute bottom-3 right-3 flex items-center gap-1.5 text-xs bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-lg font-bold hover:bg-indigo-100 transition disabled:opacity-50"
+            >
+              <Wand2 size={14} />
+              {isAnalyzing ? 'Analizando...' : 'IA Auto-completar'}
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-2">Título</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full p-3 border border-gray-300 rounded-xl focus:ring-4 focus:ring-primary/20 focus:border-primary outline-none transition"
+              placeholder="Título breve"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-2">Categoría</label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value as IssueCategory)}
+              className="w-full p-3 border border-gray-300 rounded-xl focus:ring-4 focus:ring-primary/20 focus:border-primary outline-none transition bg-white"
+            >
+              {Object.values(IssueCategory).map(c => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-bold text-gray-700 mb-2">Ubicación</label>
+          <p className="text-sm text-gray-600">Introduce la calle o detecta tu ubicación:</p>
+          <div className="relative mt-2">
+            <input
+              type="text"
+              value={street}
+              onChange={(e) => setStreet(e.target.value)}
+              className="w-full p-3 border border-gray-300 rounded-xl focus:ring-4 focus:ring-primary/20 focus:border-primary outline-none transition"
+              placeholder="Escribe la calle..."
+            />
+            {suggestions.length > 0 && (
+              <ul className="absolute z-10 bg-white border border-gray-200 rounded-xl shadow-lg mt-1 w-full">
+                {suggestions.map((suggestion, index) => (
+                  <li
+                    key={index}
+                    onClick={() => handleSuggestionClick(suggestion)}
+                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                  >
+                    {suggestion.label}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={handleGeolocation}
+            className={`w-full p-4 mt-4 rounded-xl border-2 flex items-center justify-center gap-2 transition font-bold ${location ? 'bg-green-50 border-green-200 text-green-700' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'}`}
+          >
+            <MapPin size={20} />
+            {locating ? 'Localizando...' : location ? `Ubicación detectada` : 'Detectar mi ubicación'}
+          </button>
+        </div>
+
+        {location && (
+          <div className="mt-4">
+            <p className="text-sm text-gray-600">Ubicación seleccionada:</p>
+            <p className="text-sm font-bold text-gray-800">Latitud: {location.lat}, Longitud: {location.lng}</p>
+          </div>
+        )}
+
+        <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-gray-100">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-6 py-3 text-gray-600 hover:bg-gray-100 rounded-xl transition font-bold"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            className="px-8 py-3 bg-primary text-white rounded-xl hover:bg-blue-900 transition font-bold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+          >
+            Enviar Reporte
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+const IssueCard: React.FC<{
+  issue: Issue;
+  onClick: () => void;
+  isAdmin?: boolean;
+  onStatusChange?: (id: string, s: IssueStatus) => void;
+}> = ({ issue, onClick, isAdmin, onStatusChange }) => {
+  const getStatusColor = (s: IssueStatus) => {
+    switch (s) {
+      case IssueStatus.RESOLVED: return 'bg-teal-100 text-teal-800 border-teal-200';
+      case IssueStatus.IN_PROGRESS: return 'bg-amber-100 text-amber-800 border-amber-200';
+      default: return 'bg-rose-100 text-rose-800 border-rose-200';
+    }
+  };
+
+  const getIcon = (s: IssueStatus) => {
+    switch (s) {
+      case IssueStatus.RESOLVED: return <CheckCircle size={14} />;
+      case IssueStatus.IN_PROGRESS: return <Clock size={14} />;
+      default: return <AlertCircle size={14} />;
+    }
+  }
+
+  return (
+    <div
+      onClick={onClick}
+      className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 group cursor-pointer hover:-translate-y-1"
+    >
+      <div className="h-44 w-full bg-gray-200 relative overflow-hidden">
+        <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition z-10"></div>
+        <img src={issue.imageUrl} alt={issue.title} className="w-full h-full object-cover transform group-hover:scale-110 transition duration-700" />
+        <span className={`absolute top-3 right-3 px-3 py-1.5 rounded-lg text-xs font-black flex items-center gap-1.5 border z-20 shadow-sm uppercase tracking-wide ${getStatusColor(issue.status)}`}>
+          {getIcon(issue.status)}
+          {issue.status}
+        </span>
+      </div>
+      <div className="p-5">
+        <h3 className="font-bold text-lg text-slate-800 mb-2 group-hover:text-primary transition leading-tight">{issue.title}</h3>
+        <p className="text-gray-500 text-sm mb-4 line-clamp-2 leading-relaxed">{issue.description}</p>
+
+        <div className="flex justify-between items-center text-xs text-gray-400 border-t border-gray-50 pt-3">
+          <span className="bg-gray-100 px-2 py-1 rounded text-gray-500 font-medium">{issue.category.split(' ')[0]}</span>
+          <span>{issue.createdAt}</span>
+        </div>
+
+        {isAdmin && onStatusChange && (
+          <div className="mt-4 pt-3 border-t border-gray-50 flex gap-2" onClick={(e) => e.stopPropagation()}>
+            <select
+              className="w-full text-xs p-2 border rounded-lg bg-gray-50 focus:ring-2 focus:ring-primary outline-none"
+              value={issue.status}
+              onChange={(e) => onStatusChange(issue.id, e.target.value as IssueStatus)}
+            >
+              {Object.values(IssueStatus).map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// --- Main App Component ---
+
+const App = () => {
+  const [user, setUser] = useState<User | null>(null);
+  const [activeTab, setActiveTab] = useState<'home' | 'map' | 'create' | 'admin' | 'profile' | 'shop'>('home');
+  const [issues, setIssues] = useState<Issue[]>([]);
+  const [filterCategory, setFilterCategory] = useState<string>('All');
+  const [filterStatus, setFilterStatus] = useState<string>('All');
+  const [focusedIssue, setFocusedIssue] = useState<Issue | null>(null);
+  const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
+
+  // Auth State
+  const [isAuthModalOpen, setAuthModalOpen] = useState(false);
+
+  const handleLogin = (user: User) => {
+    setAuthModalOpen(false);
+
+    // Asegurar que las propiedades necesarias estén inicializadas y tengan valores por defecto
+    setUser({
+      ...user,
+      inventory: user.inventory || [],
+      equippedFrame: user.equippedFrame || null,
+      equippedBackground: user.equippedBackground || null,
+      points: user.points || 0,
+      experience: user.experience || 0,
+    });
+
+    // Redirect logic based on role
+    if (user.role === UserRole.ADMIN) {
+      setActiveTab('admin');
+    } else {
+      setActiveTab('map');
+    }
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    setActiveTab('home');
+  };
+
+  const handleUpdateUser = async (updatedUser: User) => {
+    setUser(updatedUser);
+    await saveUserProfile(updatedUser);
+  };
+
+  const handleShopPurchase = (item: ShopItem) => {
+    if (!user) return;
+    // Prevent non-premium users from purchasing premium items
+    const isPremiumItem = (item.cost || 0) >= 400;
+    if (isPremiumItem && !user.premium) {
+      alert('Este artículo solo está disponible para usuarios Premium. Consigue Premium para poder reclamarlo.');
+      return;
+    }
+
+    if (user.points < item.cost) {
+      alert("No tienes suficientes puntos.");
+      return;
+    }
+
+    const updatedUser = {
+      ...user,
+      points: user.points - item.cost,
+      inventory: [...(user.inventory || []), item.id]
+    };
+    setUser(updatedUser);
+    // Persist profile change
+    saveUserProfile(updatedUser).catch(err => console.error('Error guardando compra en tienda:', err));
+  };
+
+  const handleEquipItem = (item: ShopItem) => {
+    if (!user) return;
+
+    const updatedUser = { ...user };
+    if (item.type === 'frame') {
+      updatedUser.equippedFrame = item.id;
+    } else if (item.type === 'background') {
+      updatedUser.equippedBackground = item.id;
+    }
+    setUser(updatedUser);
+  };
+
+  const handleBuyPremium = async () => {
+    if (!user) {
+      setAuthModalOpen(true);
+      return;
+    }
+
+    // Purchase premium with points
+    const cost = PREMIUM_COST_POINTS || 500;
+    if ((user.points || 0) < cost) {
+      alert(`No tienes suficientes puntos. Necesitas ${cost} pts para comprar Premium.`);
+      return;
+    }
+
+    const updatedUser: User = {
+      ...user,
+      premium: true,
+      points: (user.points || 0) - cost,
+    };
+    setUser(updatedUser);
+    saveUserProfile(updatedUser).catch(err => console.error('Error guardando compra premium:', err));
+    alert('Gracias por comprar Premium. Tu cuenta ha sido actualizada.');
+  };
+
+  const handleStartPremiumCheckout = async (email?: string) => {
+    try {
+      const res = await fetch('/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (!data.id) throw new Error('No session id returned');
+
+      // Load Stripe.js dynamically
+      const { loadStripe } = await import('@stripe/stripe-js');
+      const stripe = await loadStripe(process.env.VITE_STRIPE_PUBLISHABLE_KEY || (window as any).STRIPE_PUBLISHABLE_KEY);
+      if (!stripe) throw new Error('Stripe failed to load');
+      const result = await stripe.redirectToCheckout({ sessionId: data.id });
+      if ((result as any).error) {
+        alert((result as any).error.message || 'Error redirigiendo a pago');
+      }
+    } catch (err: any) {
+      console.error('Error iniciando checkout:', err);
+      alert('No se pudo iniciar el pago: ' + (err.message || err));
+    }
+  };
+
+  const handleCreateIssue = async (data: Partial<Issue>) => {
+    const newIssue: Issue = {
+      id: `${Date.now()}`,
+      ...data,
+      status: IssueStatus.PENDING,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    console.log('Creando nuevo reporte:', newIssue); // Log para depuración
+
+    try {
+      setIssues(prev => [...prev, newIssue]);
+
+      // Persist report in background so UI/navigation isn't blocked by large image uploads
+      saveReport(newIssue)
+        .then(() => console.log('Reporte guardado exitosamente en Firestore.'))
+        .catch(err => console.error('Error al guardar el reporte (background):', err));
+
+      // Otorgar puntos y experiencia al enviar el reporte (no bloqueante)
+      if (user) {
+        const newPoints = (user.points || 0) + 10;
+        const updatedUser = {
+          ...user,
+          points: newPoints,
+          experience: (user.experience || 0) + 20,
+        };
+
+        // Update UI immediately
+        setUser(updatedUser);
+
+        // Persist in background (don't await to avoid blocking map navigation)
+        saveUserProfile(updatedUser).catch(err => console.error('Error guardando perfil de usuario:', err));
+      }
+
+      // Navegar al mapa y enfocar la incidencia creada.
+      // Retrasamos el setFocusedIssue para asegurarnos de que IssueMap haya creado los marcadores
+      setActiveTab('map');
+      setFocusedIssue(null);
+      setTimeout(() => {
+        setFocusedIssue(newIssue);
+      }, 600);
+    } catch (error) {
+      console.error('Error al procesar el reporte en el cliente:', error);
+    }
+  };
+
+  const handleStatusChange = (id: string, newStatus: IssueStatus) => {
+    setIssues(issues.map(i => i.id === id ? { ...i, status: newStatus } : i));
+  };
+
+  const handleIssueUpdate = (updatedIssue: Issue) => {
+    setIssues(issues.map(i => i.id === updatedIssue.id ? updatedIssue : i));
+    setSelectedIssue(updatedIssue); // Update the modal view as well
+  };
+
+  const filteredIssues = issues.filter(i => {
+    const matchCat = filterCategory === 'All' || i.category === filterCategory;
+    const matchStat = filterStatus === 'All' || i.status === filterStatus;
+    return matchCat && matchStat;
+  });
+
+  // Filter Bar Component
+  const FilterBar = () => (
+    <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-6 flex flex-wrap gap-4 items-center animate-fade-in sticky top-20 z-30">
+      <div className="flex items-center gap-2 text-primary font-bold">
+        <Filter size={20} />
+        <span className="hidden sm:inline">Filtrar:</span>
+      </div>
+      <select
+        className="p-2 px-3 border border-gray-200 rounded-xl text-sm bg-gray-50 focus:ring-2 focus:ring-primary outline-none"
+        value={filterCategory}
+        onChange={(e) => setFilterCategory(e.target.value)}
+      >
+        <option value="All">Todas las Categorías</option>
+        {Object.values(IssueCategory).map(c => <option key={c} value={c}>{c}</option>)}
+      </select>
+      <select
+        className="p-2 px-3 border border-gray-200 rounded-xl text-sm bg-gray-50 focus:ring-2 focus:ring-primary outline-none"
+        value={filterStatus}
+        onChange={(e) => setFilterStatus(e.target.value)}
+      >
+        <option value="All">Todos los Estados</option>
+        {Object.values(IssueStatus).map(s => <option key={s} value={s}>{s}</option>)}
+      </select>
+      <div className="ml-auto text-sm text-gray-500 font-medium">
+        <strong>{filteredIssues.length}</strong> resultados
+      </div>
+    </div>
+  );
+
+  // Declarar las funciones saveUserProfile y saveReport antes de su uso
+  const saveUserProfile = async (user: User) => {
+    try {
+      const userId = user.email || user.id || 'unknown_user';
+      const userRef = doc(db, 'users', userId);
+      await setDoc(userRef, user);
+      console.log('Perfil actualizado correctamente.');
+    } catch (error) {
+      console.error('Error al guardar el perfil:', error);
+    }
+  };
+
+  const saveReport = async (report: Issue) => {
+    try {
+      const reportsRef = collection(db, 'reports');
+      await addDoc(reportsRef, report);
+      console.log('Reporte guardado correctamente.');
+    } catch (error) {
+      console.error('Error al guardar el reporte:', error);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    console.log("Iniciando sesión con Google...");
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      console.log("Resultado del inicio de sesión:", result);
+      const user = result.user;
+      console.log("Usuario autenticado:", user);
+      handleLogin({
+        id: user.uid, // Added missing id property
+        name: user.displayName || "Usuario",
+        email: user.email || "",
+        avatar: user.photoURL || "",
+        role: UserRole.CITIZEN, // Puedes ajustar el rol según tu lógica
+        points: 0,
+        experience: 0,
+        inventory: [], // Added missing inventory property
+      });
+
+      // Ensure the user is redirected to the map after login
+      setActiveTab('map');
+    } catch (error) {
+      console.error("Error al iniciar sesión con Google:", error);
+      alert(`Error al iniciar sesión: ${error.message}`);
+    }
+  };
+
+  const handleFacebookLogin = async () => {
+    console.log("Iniciando sesión con Facebook...");
+    try {
+      const result = await signInWithPopup(auth, facebookProvider);
+      console.log("Resultado del inicio de sesión con Facebook:", result);
+      const user = result.user;
+      console.log("Usuario autenticado con Facebook:", user);
+      handleLogin({
+        id: user.uid, // Added missing id property
+        name: user.displayName || "Usuario",
+        email: user.email || "",
+        avatar: user.photoURL || "",
+        role: UserRole.CITIZEN, // Puedes ajustar el rol según tu lógica
+        points: 0,
+        experience: 0,
+        inventory: [], // Added missing inventory property
+      });
+    } catch (error) {
+      console.error("Error al iniciar sesión con Facebook:", error);
+      alert(`Error al iniciar sesión con Facebook: ${error.message}`);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-bgLight font-sans pb-10 pt-[72px]">
+
+      {/* Auth Modal */}
+      {isAuthModalOpen && (
+        <AuthScreen 
+          onLogin={handleLogin} 
+          onClose={() => setAuthModalOpen(false)}
+          additionalButtons={
+            <button
+              onClick={handleFacebookLogin}
+              className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2 rounded-full font-bold transition hover:bg-blue-700 shadow-md text-sm"
+            >
+              <img src="/facebook-logo.png" alt="Facebook Logo" className="h-5 w-5" />
+              <span>Iniciar sesión con Facebook</span>
+            </button>
+          }
+        />
+      )}
+
+      {/* Detail Modal */}
+      {selectedIssue && (
+        <IssueDetailModal
+          issue={selectedIssue}
+          currentUser={user}
+          onClose={() => setSelectedIssue(null)}
+          onFocusLocation={(loc) => setFocusedIssue({ ...selectedIssue, location: loc })}
+          onUpdateIssue={handleIssueUpdate}
+        />
+      )}
+
+      <Header
+        user={user}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        onLogout={handleLogout}
+        onLoginClick={() => setAuthModalOpen(true)}
+      />
+
+      <main className="container mx-auto px-4 pt-6">
+
+        {activeTab === 'home' && (
+          <LandingPage onStart={() => {
+            if (user) setActiveTab('map');
+            else setAuthModalOpen(true);
+          }} />
+        )}
+
+        {/* Dynamic Content */}
+
+        {activeTab === 'map' && (
+          <div className="h-[calc(100vh-160px)] flex flex-col animate-fade-in">
+            <FilterBar />
+
+            <div className="flex-1 flex flex-col md:flex-row gap-6 min-h-0">
+              {/* Sidebar List - Left side */}
+              <div className="w-full md:w-1/3 lg:w-[380px] overflow-y-auto pr-2 space-y-4 pb-4 order-2 md:order-1 custom-scrollbar">
+                {filteredIssues.map(issue => (
+                  <IssueCard
+                    key={issue.id}
+                    issue={issue}
+                    onClick={() => setSelectedIssue(issue)}
+                    isAdmin={user?.role === UserRole.ADMIN}
+                    onStatusChange={handleStatusChange}
+                  />
+                ))}
+                {filteredIssues.length === 0 && (
+                  <div className="p-12 text-center text-gray-400 bg-white rounded-3xl border-2 border-dashed border-gray-200 flex flex-col items-center">
+                    <Search size={40} className="mb-3 opacity-20" />
+                    <p>No hay incidencias.</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Map Container - Right side */}
+              <div className="flex-1 relative rounded-3xl overflow-hidden border-8 border-white shadow-xl min-h-[400px] order-1 md:order-2">
+                <IssueMap
+                  issues={filteredIssues}
+                  onSelectIssue={(i) => setSelectedIssue(i)}
+                  focusedIssue={focusedIssue}
+                />
+
+                {/* Map Overlay Legend */}
+                <div className="absolute bottom-6 left-6 bg-white/95 backdrop-blur-md p-4 rounded-2xl shadow-xl text-xs space-y-2 z-[400] border border-gray-100">
+                  <div className="font-bold text-gray-500 uppercase tracking-wider mb-2">Leyenda</div>
+                  <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#EF4444] shadow-sm"></div>Pendiente</div>
+                  <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#F59E0B] shadow-sm"></div>En Proceso</div>
+                  <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#48C9B0] shadow-sm"></div>Resuelto</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'create' && user?.role === UserRole.CITIZEN && (
+          <ReportForm
+            onSubmit={handleCreateIssue}
+            onCancel={() => setActiveTab('map')}
+          />
+        )}
+
+        {activeTab === 'admin' && user?.role === UserRole.ADMIN && (
+          <StatsPanel issues={issues} />
+        )}
+
+        {activeTab === 'profile' && user && (
+          <ProfilePanel user={user} issues={issues} onUpdateUser={handleUpdateUser} />
+        )}
+
+        {activeTab === 'shop' && user && (
+          <ShopPanel
+            user={user}
+            onPurchase={handleShopPurchase}
+            onEquip={handleEquipItem}
+            onBuyPremium={handleBuyPremium}
+          />
+        )}
+
+        {/* Access Denied / Fallback */}
+        {activeTab === 'admin' && user?.role !== UserRole.ADMIN && (
+          <div className="flex flex-col items-center justify-center h-[60vh] text-gray-400">
+            <div className="bg-gray-100 p-6 rounded-full mb-4">
+              <AlertCircle size={48} className="text-gray-300" />
+            </div>
+            <h3 className="text-2xl font-black text-gray-700">Acceso Restringido</h3>
+            <p>Solo personal autorizado del Ayuntamiento.</p>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+};
+
+export default App;
