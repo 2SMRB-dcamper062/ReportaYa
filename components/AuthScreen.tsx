@@ -145,9 +145,9 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onClose }) => {
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
       <div className="bg-white rounded-lg shadow-lg w-full max-w-md">
-        <header className="bg-blue-600 text-white p-4 rounded-t-lg flex justify-between items-center">
-          <h2 className="text-lg font-bold">Bienvenido</h2>
-          <button onClick={onClose} className="text-white">
+        <header className="bg-blue-600 text-white p-4 rounded-t-lg flex justify-between items-center relative h-16">
+          <h2 className="absolute left-1/2 transform -translate-x-1/2 text-lg font-bold">Bienvenido</h2>
+          <button onClick={onClose} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white">
             <X className="w-5 h-5" />
           </button>
         </header>

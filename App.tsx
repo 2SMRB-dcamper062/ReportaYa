@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { UserRole, Issue, IssueStatus, IssueCategory, User, ShopItem } from './types';
-import { MOCK_ISSUES, MOCK_USER, SEVILLA_CENTER, PREMIUM_COST_POINTS } from './constants';
+import { MOCK_ISSUES, MOCK_USER, SEVILLA_CENTER, PREMIUM_COST_POINTS, SHOP_ITEMS } from './constants';
 import IssueMap from './components/IssueMap';
 import StatsPanel from './components/StatsPanel';
 import LandingPage from './components/LandingPage';
@@ -128,11 +128,17 @@ const Header = ({ user, activeTab, setActiveTab, onLogout, onLoginClick }: any) 
               className={`flex items-center gap-3 pl-1 pr-3 py-1 rounded-full transition group border border-transparent ${activeTab === 'profile' ? 'bg-white/10 border-white/20' : 'hover:bg-white/5'}`}
             >
               <div className="relative">
-                <img
-                  src={user.avatar || `https://ui-avatars.com/api/?name=${user.name}&background=random`}
-                  alt="avatar"
-                  className="w-9 h-9 rounded-full border-2 border-white/50 object-cover"
-                />
+                {(() => {
+                  const framePreview = user?.equippedFrame ? (SHOP_ITEMS.find(i => i.id === user.equippedFrame)?.previewValue || 'border-white/50') : 'border-white/50';
+                  return (
+                    <img
+                      src={user.avatar || `https://ui-avatars.com/api/?name=${user.name}&background=random`}
+                      alt="avatar"
+                      className={`w-9 h-9 rounded-full border-2 ${framePreview} object-cover`}
+                    />
+                  );
+                })()}
+
                 {/* Online Dot */}
                 <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-400 rounded-full border-2 border-primary"></div>
                 {showLevelUp && (
@@ -687,7 +693,8 @@ const App = () => {
         .catch(err => console.error('Error al guardar el reporte (background):', err));
 
       // Otorgar puntos y experiencia al enviar el reporte (no bloqueante)
-      if (user) {
+        if (user) {
+        // Puntos normales por reporte
         const newPoints = (user.points || 0) + 10;
         const updatedUser = {
           ...user,

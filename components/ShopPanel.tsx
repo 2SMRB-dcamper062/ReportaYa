@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, ShopItem } from '../types';
 import { ALL_SHOP_ITEMS, PREMIUM_COST_POINTS } from '../constants';
-import { ShoppingBag, Lock, Check, Layout, Square, Sparkles, Crown, Wallet, Trophy } from 'lucide-react';
+import { ShoppingBag, Lock, Check, Layout, Square, Sparkles, Crown, Wallet, Trophy, Gift } from 'lucide-react';
 
 interface ShopPanelProps {
   user: User;
@@ -13,17 +13,29 @@ interface ShopPanelProps {
 const ShopPanel: React.FC<ShopPanelProps> = ({ user, onPurchase, onEquip, onBuyPremium, onStartPremiumCheckout }) => {
   const [activeTab, setActiveTab] = useState<'frame' | 'background' | 'badge'>('frame');
   const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const [modalAnimateIn, setModalAnimateIn] = useState(false);
 
   const filteredItems = ALL_SHOP_ITEMS.filter(item => item.type === activeTab);
 
   // Helper to determine if an item is "Premium" based on cost
   const isPremium = (cost: number) => cost >= 400;
 
+  // Trigger animation state when modal opens
+  useEffect(() => {
+    if (showPremiumModal) {
+      // small delay to ensure transition classes apply
+      const t = setTimeout(() => setModalAnimateIn(true), 10);
+      return () => clearTimeout(t);
+    }
+    // when showPremiumModal becomes false we keep modalAnimateIn false
+    setModalAnimateIn(false);
+  }, [showPremiumModal]);
+
   return (
     <div className="max-w-6xl mx-auto animate-fade-in space-y-8 pb-12">
       
       {/* Hero / Wallet Section */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-primary to-blue-900 p-8 text-white shadow-2xl">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-primary to-blue-900 p-8 text-white shadow-2xl">
         {/* Decorative background blobs */}
         <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 rounded-full bg-secondary opacity-20 blur-3xl"></div>
         <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-60 h-60 rounded-full bg-purple-500 opacity-20 blur-3xl"></div>
@@ -48,14 +60,47 @@ const ShopPanel: React.FC<ShopPanelProps> = ({ user, onPurchase, onEquip, onBuyP
                 <p className="text-3xl font-black text-white leading-none">{user.points || 0} <span className="text-lg font-medium text-yellow-400">pts</span></p>
              </div>
             {/* Buy Premium Button */}
-             <div className="ml-4">
-              <button
-                onClick={() => setShowPremiumModal(true)}
-                className="ml-4 px-4 py-2 bg-gradient-to-r from-yellow-400 to-yellow-600 text-white rounded-xl font-bold text-sm shadow-lg hover:opacity-90 flex items-center gap-2"
-              >
-                <Crown size={16} className="text-white" /> Comprar Premium
-              </button>
+            {/* Botón de comprar premium movido a la esquina superior derecha */}
+          </div>
+        </div>
+      </div>
+
+      {/* Premium banner (mejorado) */}
+      <div className="max-w-6xl mx-auto px-4 -mt-6">
+        <div className="bg-gradient-to-r from-indigo-900 to-primary rounded-3xl p-4 shadow-2xl text-white flex flex-col sm:flex-row items-center gap-4 border border-white/10">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-lg bg-white/10 flex items-center justify-center ring-1 ring-white/10 shadow-md">
+              <Crown size={22} className="text-yellow-300" />
             </div>
+            <div>
+              <div className="font-extrabold text-lg">ReportaYa Premium</div>
+              <div className="text-sm text-white/80">Fondos exclusivos, tags únicos y soporte prioritario.</div>
+            </div>
+          </div>
+
+          <div className="hidden sm:flex items-center gap-4 ml-auto">
+            <div className="flex items-center gap-3 bg-white/5 rounded-full px-3 py-2">
+              <Sparkles className="text-yellow-300" />
+              <span className="text-sm text-white/90">Contenido exclusivo</span>
+            </div>
+            <div className="flex items-center gap-3 bg-white/5 rounded-full px-3 py-2">
+              <Trophy className="text-yellow-300" />
+              <span className="text-sm text-white/90">Tags premium</span>
+            </div>
+          </div>
+
+          <div className="w-full sm:w-auto flex justify-center sm:justify-end">
+            {(() => {
+              const isPremiumUser = Boolean(user?.premium);
+              return (
+                <button
+                  onClick={() => setShowPremiumModal(true)}
+                  className={`px-5 py-2 rounded-full font-bold shadow-lg hover:scale-105 transform transition ${isPremiumUser ? 'bg-white/10 text-yellow-300' : 'bg-yellow-400 text-indigo-900'}`}
+                >
+                  {isPremiumUser ? 'Ver mis ventajas' : 'Quiero Premium'}
+                </button>
+              );
+            })()}
           </div>
         </div>
       </div>
@@ -200,21 +245,91 @@ const ShopPanel: React.FC<ShopPanelProps> = ({ user, onPurchase, onEquip, onBuyP
         })}
       </div>
       {/* Premium Modal */}
-      {showPremiumModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md">
-            <h3 className="text-lg font-bold mb-3">Comprar ReportaYa Premium</h3>
-            <p className="text-sm text-gray-600 mb-4">Desbloquea todas las opciones premium por {PREMIUM_COST_POINTS} pts.</p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => { onBuyPremium && onBuyPremium(); setShowPremiumModal(false); }}
-                disabled={(user.points || 0) < PREMIUM_COST_POINTS}
-                className={`flex-1 px-4 py-2 rounded-lg font-bold ${
-                  (user.points || 0) >= PREMIUM_COST_POINTS ? 'bg-yellow-500 text-white' : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                }`}
-              >{(user.points || 0) >= PREMIUM_COST_POINTS ? `Comprar por ${PREMIUM_COST_POINTS} pts` : `Necesitas ${PREMIUM_COST_POINTS} pts`}</button>
+      {(showPremiumModal || modalAnimateIn) && (
+        <div className={`fixed inset-0 z-50 flex items-center justify-center ${modalAnimateIn ? 'bg-black/50' : 'bg-black/0'}` }>
+          <div className={`w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl transform transition-all duration-300 ${modalAnimateIn ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
+            <div className="p-6 bg-gradient-to-r from-indigo-900 to-primary text-white">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-12 h-12 rounded-lg bg-yellow-400 flex items-center justify-center text-indigo-900 shadow-lg">
+                      <Crown size={20} />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-extrabold">ReportaYa Premium</h3>
+                      <p className="text-sm text-yellow-200">Mejora tu experiencia y desbloquea contenido exclusivo</p>
+                    </div>
+                  </div>
+                  <p className="text-sm text-white/80 mb-4">Consigue acceso inmediato a todos los fondos, tags y marcos exclusivos. Además, disfruta de prioridad en soporte y una experiencia sin anuncios.</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="flex items-start gap-3">
+                      <div className="mt-1 text-yellow-300"><Sparkles size={18} /></div>
+                      <div>
+                        <div className="font-semibold">Fondos y marcos exclusivos</div>
+                        <div className="text-xs text-white/80">Accede a imágenes y estilos premium.</div>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="mt-1 text-yellow-300"><Trophy size={18} /></div>
+                      <div>
+                        <div className="font-semibold">Tags exclusivos</div>
+                        <div className="text-xs text-white/80">Etiquetas y distintivos únicos para tu perfil.</div>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="mt-1 text-yellow-300"><Gift size={18} /></div>
+                      <div>
+                        <div className="font-semibold">Bonificaciones periódicas</div>
+                        <div className="text-xs text-white/80">Puntos y regalos especiales para usuarios premium.</div>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="mt-1 text-yellow-300"><Check size={18} /></div>
+                      <div>
+                        <div className="font-semibold">Soporte prioritario</div>
+                        <div className="text-xs text-white/80">Atención preferente a incidencias y consultas.</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                  <div className="w-48 flex-shrink-0 flex flex-col justify-center items-center self-center">
+                    {user?.premium ? (
+                      <div className="bg-gradient-to-r from-emerald-50 to-emerald-100 border border-emerald-200 rounded-2xl p-5 text-center mx-auto shadow-lg">
+                        <div className="flex items-center justify-center mb-3">
+                          <div className="w-12 h-12 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-inner mr-3">
+                            <Check size={18} />
+                          </div>
+                          <div className="text-left">
+                            <div className="text-sm font-semibold text-emerald-800">¡Gracias por adquirir Premium!</div>
+                            <div className="text-xs text-emerald-700">Tu cuenta ha sido actualizada.</div>
+                          </div>
+                        </div>
+                        <div className="text-sm text-gray-700">Disfruta de fondos y etiquetas exclusivas, bonificaciones y soporte prioritario.</div>
+                      </div>
+                    ) : (
+                          <div className="bg-white/10 rounded-xl p-4 text-center mx-auto">
+                            <div className="text-sm text-white/80">Precio</div>
+                            <div className="text-3xl font-extrabold text-yellow-300 my-2">{PREMIUM_COST_POINTS} pts</div>
+                            <button
+                              onClick={() => {
+                                if ((user.points || 0) >= PREMIUM_COST_POINTS) {
+                                  onBuyPremium && onBuyPremium();
+                                  // animate close
+                                  setModalAnimateIn(false);
+                                  setTimeout(() => setShowPremiumModal(false), 280);
+                                }
+                              }}
+                              disabled={(user.points || 0) < PREMIUM_COST_POINTS}
+                              className={`w-full py-2 rounded-lg font-bold mb-2 ${ (user.points || 0) >= PREMIUM_COST_POINTS ? 'bg-yellow-400 text-indigo-900' : 'bg-white/20 text-white/40 cursor-not-allowed' }`}
+                            >{`Comprar por ${PREMIUM_COST_POINTS} pts`}</button>
+                          </div>
+                        )}
+                      </div>
+              </div>
             </div>
-            <button onClick={() => setShowPremiumModal(false)} className="mt-4 text-sm text-gray-500">Cancelar</button>
+            <div className="p-4 bg-white text-right">
+              <button onClick={() => { setModalAnimateIn(false); setTimeout(() => setShowPremiumModal(false), 280); }} className="text-sm text-indigo-900 font-semibold">Cerrar</button>
+            </div>
           </div>
         </div>
       )}
