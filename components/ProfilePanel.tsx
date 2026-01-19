@@ -10,9 +10,7 @@ interface ProfilePanelProps {
 }
 
 // Reward Configuration
-const REWARDS = [
-
-];
+// (Recompensas eliminadas: se quitaron del componente por petición)
 
 const ProfilePanel: React.FC<ProfilePanelProps> = ({ user, issues, onUpdateUser }) => {
     const [isEditing, setIsEditing] = useState(false);
@@ -21,8 +19,30 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ user, issues, onUpdateUser 
     const [profileTag, setProfileTag] = useState<string>(user.profileTag || '');
     const [selectedTagId, setSelectedTagId] = useState<string>(user.profileTag && ALL_SHOP_ITEMS.find(i => i.id === user.profileTag) ? user.profileTag : '');
     const fileInputRef = useRef<HTMLInputElement | null>(null);
+    const [toastMsg, setToastMsg] = useState<string | null>(null);
 
   // Stats
+  
+        // Resolve profile tag name from shop or dynamic level badges
+        const findDynamicBadge = (id?: string) => {
+            if (!id) return undefined;
+            const fromShop = ALL_SHOP_ITEMS.find(i => i.id === id);
+            if (fromShop) return fromShop;
+            const m = id.match(/^tag_nivel_(\d+)$/);
+            if (!m) return undefined;
+            const lvl = parseInt(m[1], 10);
+            return {
+                id,
+                name: `Nivel ${lvl}`,
+                description: `Desbloqueado al alcanzar nivel ${lvl}.`,
+                cost: 0,
+                type: 'badge' as const,
+                previewValue: `bg-gradient-to-r from-indigo-200 to-indigo-400 text-indigo-800`,
+                minLevel: lvl
+            } as any;
+        };
+
+        const profileTagItem = findDynamicBadge(user.profileTag);
   const userIssues = issues.filter(i => i.author === user.name);
   const resolvedCount = userIssues.filter(i => i.status === IssueStatus.RESOLVED).length;
   const adminTotal = issues.length;
@@ -37,6 +57,33 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ user, issues, onUpdateUser 
     const expToNext = Math.max(0, nextLevelExp - experience);
     const expCurrent = Math.max(0, experience - prevLevelExp);
     const progressPercent = Math.min(100, Math.max(0, (expCurrent / 100) * 100));
+
+        // Sliding window state for infinite level badges
+        const [badgeWindowStart, setBadgeWindowStart] = useState(0);
+        const VISIBLE_BADGE_COUNT = 6;
+        const badgeStyles = [
+            'bg-gradient-to-r from-green-200 to-green-400 text-green-800',
+            'bg-gradient-to-r from-teal-200 to-teal-400 text-teal-800',
+            'bg-gradient-to-r from-blue-200 to-blue-400 text-blue-800',
+            'bg-gradient-to-r from-indigo-200 to-indigo-400 text-indigo-800',
+            'bg-gradient-to-r from-purple-200 to-purple-400 text-purple-800'
+        ];
+
+        React.useEffect(() => {
+            const highestUnlockedIndex = Math.floor(currentLevel / 20) - 1;
+            if (highestUnlockedIndex < 0) return;
+            const rightmostIndex = badgeWindowStart + VISIBLE_BADGE_COUNT - 1;
+            if (highestUnlockedIndex > rightmostIndex) {
+                setBadgeWindowStart(Math.max(0, highestUnlockedIndex - (VISIBLE_BADGE_COUNT - 1)));
+            }
+        }, [currentLevel]);
+
+                                                    <span className="px-1 text-center truncate">{name}</span>
+        const unlockedDynamicBadges = [] as { id: string; name: string }[];
+        for (let lvl = 20; lvl <= currentLevel; lvl += 20) {
+            const id = `tag_nivel_${lvl}`;
+            unlockedDynamicBadges.push({ id, name: `Nivel ${lvl}` });
+        }
 
   // Get Equipped Styles
   const equippedBg = SHOP_ITEMS.find(i => i.id === user.equippedBackground)?.previewValue || 'bg-gradient-to-r from-primary to-blue-800';
@@ -134,7 +181,7 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ user, issues, onUpdateUser 
                                 </span>
                             </h1>
                             <p className="text-gray-500 font-medium">
-                                {ALL_SHOP_ITEMS.find(i => i.id === user.profileTag)?.name || user.profileTag || (user.role === UserRole.ADMIN ? 'Administrador Municipal' : 'Ciudadano activo')}
+                                {profileTagItem?.name || user.profileTag || (user.role === UserRole.ADMIN ? 'Administrador Municipal' : 'Ciudadano activo')}
                             </p>
                         </div>
                 </div>
@@ -178,7 +225,7 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ user, issues, onUpdateUser 
                             </div>
                         )}
                     </h1>
-                    <p className="text-gray-500 text-sm">{ALL_SHOP_ITEMS.find(i => i.id === user.profileTag)?.name || user.profileTag || (user.role === UserRole.ADMIN ? 'Administrador Municipal' : 'Ciudadano activo')}</p>
+                    <p className="text-gray-500 text-sm">{profileTagItem?.name || user.profileTag || (user.role === UserRole.ADMIN ? 'Administrador Municipal' : 'Ciudadano activo')}</p>
                </div>
           </div>
         </div>
@@ -202,8 +249,13 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ user, issues, onUpdateUser 
                                 <label className="text-xs text-gray-400">Tag de perfil (adquiridos)</label>
                                 <select value={selectedTagId} onChange={(e) => setSelectedTagId(e.target.value)} className="w-full p-3 border rounded-xl">
                                     <option value="">Ninguno</option>
+                                    {/* Badges owned from shop */}
                                     {ALL_SHOP_ITEMS.filter(i => i.type === 'badge' && (user.inventory || []).includes(i.id)).map(b => (
                                         <option key={b.id} value={b.id}>{b.name}</option>
+                                    ))}
+                                    {/* Dynamically include unlocked level badges (even if not yet claimed) */}
+                                    {unlockedDynamicBadges.map(d => (
+                                        <option key={d.id} value={d.id}>{d.name}{(user.inventory||[]).includes(d.id) ? ' (Adquirido)' : ''}</option>
                                     ))}
                                 </select>
                             </div>
@@ -290,23 +342,57 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ user, issues, onUpdateUser 
                             </div>
                         </div>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {REWARDS.map((reward, idx) => {
-                                const isUnlocked = currentPoints >= reward.points;
-                                return (
-                                    <div key={idx} className={`p-4 rounded-xl border transition-all duration-300 flex items-center gap-4 ${isUnlocked ? 'bg-white text-gray-800 border-white shadow-lg' : 'bg-white/5 border-white/10 text-gray-300'}`}>
-                                        <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${isUnlocked ? 'bg-yellow-100 text-yellow-700' : 'bg-white/10 text-gray-500'}`}>
-                                            {isUnlocked ? reward.icon : <Lock size={20} />}
-                                        </div>
-                                        <div>
-                                            <div className="font-bold text-sm leading-tight mb-1">{reward.title}</div>
-                                            <div className="text-xs opacity-70">{reward.points} pts necesarios</div>
-                                        </div>
-                                        {isUnlocked && <Check className="ml-auto text-green-500" size={20} />}
-                                    </div>
-                                );
-                            })}
-                        </div>
+                            {/* Badges desbloqueables por nivel (debajo de la barra de progreso) */}
+                            <div className="mb-6">
+                                <h3 className="text-sm text-blue-100 mb-3 font-semibold">Tags desbloqueables</h3>
+                                <div className="flex gap-3 items-center pr-6">
+                                    {Array.from({ length: VISIBLE_BADGE_COUNT }).map((_, idx) => {
+                                        const index = badgeWindowStart + idx;
+                                        const level = (index + 1) * 20;
+                                        const id = `tag_nivel_${level}`;
+                                        const name = `Nivel ${level}`;
+                                        const preview = badgeStyles[index % badgeStyles.length];
+                                        const icons = ['🌿','🌷','🏵️','🌟','👑'];
+                                        const icon = icons[index % icons.length];
+                                        const unlocked = currentLevel >= level;
+                                        const owned = (user.inventory || []).includes(id);
+                                        const isRightmost = idx === VISIBLE_BADGE_COUNT - 1;
+
+                                        const handleClick = () => {
+                                            if (!unlocked) return;
+                                            if (!owned) {
+                                                const newInv = [...(user.inventory || []), id];
+                                                onUpdateUser({ ...user, inventory: newInv, profileTag: id });
+                                                setToastMsg(`Tag '${name}' reclamado`);
+                                            } else {
+                                                onUpdateUser({ ...user, profileTag: id });
+                                                setToastMsg(`Tag '${name}' seleccionado`);
+                                            }
+                                            setSelectedTagId(id);
+                                            setTimeout(() => setToastMsg(null), 2200);
+                                        };
+
+                                        return (
+                                            <div
+                                                key={id}
+                                                onClick={handleClick}
+                                                title={unlocked ? (owned ? 'Seleccionar tag' : 'Reclamar y seleccionar tag') : `Requiere nivel ${level}`}
+                                                className={`w-28 p-1 rounded-lg border ${unlocked ? 'bg-white/10 border-white/20 cursor-pointer hover:scale-105 transition-transform' : 'bg-white/5 border-white/10 opacity-80 cursor-not-allowed'}`}
+                                            >
+                                                <div className={`rounded-md w-full h-10 flex items-center justify-center gap-2 text-xs font-bold overflow-hidden ${preview} ${unlocked ? '' : 'filter grayscale'}`}>
+                                                    <span className="text-lg leading-none">{icon}</span>
+                                                    <span className={`px-1 text-center ${isRightmost ? '' : 'truncate'}`}>{name}</span>
+                                                </div>
+                                                <div className="text-[11px] text-blue-100 mt-1 text-center">{unlocked ? (owned ? 'Adquirido' : 'Desbloqueado') : `Nivel ${level}`}</div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Recompensas deshabilitadas */}
+                            </div>
                     </div>
                 </div>
              ) : (
@@ -325,6 +411,12 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ user, issues, onUpdateUser 
              )}
         </div>
       </div>
+            {/* Toast breve */}
+            {toastMsg && (
+                <div className="fixed bottom-8 right-8 bg-primary text-white px-4 py-2 rounded-xl shadow-lg z-50">
+                    {toastMsg}
+                </div>
+            )}
     </div>
   );
 };

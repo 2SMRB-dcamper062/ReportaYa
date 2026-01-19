@@ -105,19 +105,62 @@ export const SHOP_ITEMS: ShopItem[] = [
     previewValue: "bg-[url('/catedral.jpg')] bg-cover bg-center"
   },
   {
+    id: 'bg_fondo_inicio',
+    name: 'Fondo Inicio',
+    description: 'Imagen de cabecera del sitio.',
+    cost: 200,
+    type: 'background',
+    previewValue: "bg-[url('/fondo_inicio.jpg')] bg-cover bg-center"
+  },
+  {
+    id: 'bg_mosaico',
+    name: 'Feria de Sevilla',
+    description: 'Feria de Sevilla.',
+    cost: 150,
+    type: 'background',
+    previewValue: "bg-[url('/feria_sevilla.jpg')] bg-cover bg-center"
+  },
+  {
+    id: 'bg_cielo',
+    name: 'Cielo Sevillano',
+    description: 'Vistas de la ciudad y del cielo.',
+    cost: 120,
+    type: 'background',
+    previewValue: "bg-[url('/cielo.jpg')] bg-cover bg-center"
+  },
+  {
+    id: 'bg_plaza_alba',
+    name: 'Plaza al Alba',
+    description: 'Tonos cálidos al amanecer.',
+    cost: 180,
+    type: 'background',
+    previewValue: "bg-[url('/plaza_alba.jpg')] bg-cover bg-center brightness-95"
+  },
+  {
+    id: 'bg_azulejos',
+    name: 'Azulejos Triana',
+    description: 'Patrón inspirado en azulejos.',
+    cost: 220,
+    type: 'background',
+    previewValue: "bg-[url('/azulejo_triana.jpg')] bg-cover bg-center brightness-95"
+  }
+  ,
+  {
     id: 'bg_giralda',
     name: 'Atardecer Giralda',
     description: 'Los colores del cielo sobre la torre.',
     cost: 500,
     type: 'background',
+    premium: true,
     previewValue: "bg-[url('/atardecer_giralda.jpg')] bg-cover bg-center"
   },
-    {
+  {
     id: 'bg_alcazar',
     name: 'Oro del Alcázar',
     description: 'Lujo histórico y patrones dorados.',
     cost: 700,
     type: 'background',
+    premium: true,
     previewValue: "bg-[url('/alcazar_patio.jpg')] bg-cover bg-center"
   },
   {
@@ -126,6 +169,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     description: 'Elegancia nocturna bajo las estrellas.',
     cost: 900,
     type: 'background',
+    premium: true,
     previewValue: "bg-[url('/noche_sevillana.jpg')] bg-cover bg-center"
   }
 ];
@@ -173,6 +217,7 @@ export const BADGE_ITEMS: ShopItem[] = [
     type: 'badge',
     previewValue: 'bg-gray-100 text-gray-800'
   },
+  
   // Premium tags (solo para usuarios Premium)
   {
     id: 'tag_elite',
@@ -266,6 +311,55 @@ export const MOCK_USER = {
   points: 150,
   experience: 0
 };
+
+// Badges desbloqueables por nivel (no están en la tienda)
+export const LEVEL_BADGES: ShopItem[] = [
+  {
+    id: 'tag_nivel_20',
+    name: 'Nivel 20',
+    description: 'Desbloqueado al alcanzar nivel 20.',
+    cost: 0,
+    type: 'badge',
+    previewValue: 'bg-gradient-to-r from-green-200 to-green-400 text-green-800',
+    minLevel: 20
+  },
+  {
+    id: 'tag_nivel_40',
+    name: 'Nivel 40',
+    description: 'Desbloqueado al alcanzar nivel 40.',
+    cost: 0,
+    type: 'badge',
+    previewValue: 'bg-gradient-to-r from-teal-200 to-teal-400 text-teal-800',
+    minLevel: 40
+  },
+  {
+    id: 'tag_nivel_60',
+    name: 'Nivel 60',
+    description: 'Desbloqueado al alcanzar nivel 60.',
+    cost: 0,
+    type: 'badge',
+    previewValue: 'bg-gradient-to-r from-blue-200 to-blue-400 text-blue-800',
+    minLevel: 60
+  },
+  {
+    id: 'tag_nivel_80',
+    name: 'Nivel 80',
+    description: 'Desbloqueado al alcanzar nivel 80.',
+    cost: 0,
+    type: 'badge',
+    previewValue: 'bg-gradient-to-r from-indigo-200 to-indigo-400 text-indigo-800',
+    minLevel: 80
+  },
+  {
+    id: 'tag_nivel_100',
+    name: 'Nivel 100',
+    description: 'Desbloqueado al alcanzar nivel 100.',
+    cost: 0,
+    type: 'badge',
+    previewValue: 'bg-gradient-to-r from-purple-200 to-purple-400 text-purple-800',
+    minLevel: 100
+  }
+];
 
 // Cost in points to unlock Premium via in-app points purchase
 // Set to 500 points for in-app purchase with points

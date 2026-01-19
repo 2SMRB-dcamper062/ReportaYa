@@ -47,6 +47,8 @@ export interface ShopItem {
   cost: number;
   type: ItemType;
   previewValue: string; // URL for bg, or CSS class/color for frame
+  premium?: boolean;
+  minLevel?: number;
 }
 
 export interface User {
