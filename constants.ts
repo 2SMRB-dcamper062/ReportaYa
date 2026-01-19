@@ -174,8 +174,8 @@ export const SHOP_ITEMS: ShopItem[] = [
   }
 ];
 
-// --- BADGES / PROFILE TAGS ---
-// Small items that users can buy to set as their profile tag
+// --- INSIGNIAS / ETIQUETAS DE PERFIL ---
+// Pequeños items que los usuarios pueden comprar para establecer como etiqueta de perfil
 export const BADGE_ITEMS: ShopItem[] = [
   {
     id: 'tag_colaborador',
@@ -218,7 +218,7 @@ export const BADGE_ITEMS: ShopItem[] = [
     previewValue: 'bg-gray-100 text-gray-800'
   },
   
-  // Premium tags (solo para usuarios Premium)
+  // Etiquetas premium (solo para usuarios Premium)
   {
     id: 'tag_elite',
     name: 'Élite Ciudadana',
@@ -242,6 +242,26 @@ export const BADGE_ITEMS: ShopItem[] = [
     cost: 1000,
     type: 'badge',
     previewValue: 'bg-black text-yellow-300'
+  }
+];
+
+// Developer / Admin badges (exclusivas: no aparecen en la tienda)
+export const EXCLUSIVE_BADGES: ShopItem[] = [
+  {
+    id: 'tag_developer',
+    name: 'Developer',
+    description: 'Insignia de desarrollador (test).',
+    cost: 0,
+    type: 'badge',
+    previewValue: 'bg-gradient-to-r from-sky-200 to-sky-400 text-sky-800'
+  },
+  {
+    id: 'tag_admin',
+    name: 'Admin',
+    description: 'Insignia de administrador municipal.',
+    cost: 0,
+    type: 'badge',
+    previewValue: 'bg-gradient-to-r from-yellow-300 to-yellow-500 text-yellow-900'
   }
 ];
 
@@ -311,6 +331,37 @@ export const MOCK_USER = {
   points: 150,
   experience: 0
 };
+
+// Mock test users requested
+export const MOCK_USERS = [
+  {
+    id: 'antonio.diaz',
+    name: 'Antonio Díaz',
+    role: UserRole.CITIZEN,
+    inventory: ['frame_default', 'tag_developer'],
+    equippedFrame: 'frame_default',
+    equippedBackground: 'bg_default',
+    points: 200,
+    experience: 0,
+    email: 'antonio.diaz@reportaya.es',
+    password: 'reportaya_2025',
+    profileTag: 'tag_developer'
+  },
+  {
+    id: 'david.camacho',
+    name: 'David Camacho',
+    role: UserRole.CITIZEN,
+    inventory: ['frame_default', 'tag_developer'],
+    equippedFrame: 'frame_default',
+    equippedBackground: 'bg_default',
+    points: 300,
+    experience: 0,
+    email: 'david.camacho@reportaya.es',
+    password: 'reportaya_2025',
+    profileTag: 'tag_developer',
+    premium: false
+  }
+];
 
 // Badges desbloqueables por nivel (no están en la tienda)
 export const LEVEL_BADGES: ShopItem[] = [

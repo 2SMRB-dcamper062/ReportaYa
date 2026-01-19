@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, ShopItem } from '../types';
 import { ALL_SHOP_ITEMS, PREMIUM_COST_POINTS } from '../constants';
-import { ShoppingBag, Lock, Check, Layout, Square, Sparkles, Crown, Wallet, Trophy, Gift } from 'lucide-react';
+import { ShoppingBag, Lock, Check, Layout, Square, Sparkles, Crown, Wallet, Trophy, Gift, HelpCircle } from 'lucide-react';
 
 interface ShopPanelProps {
   user: User;
@@ -14,6 +14,8 @@ const ShopPanel: React.FC<ShopPanelProps> = ({ user, onPurchase, onEquip, onBuyP
   const [activeTab, setActiveTab] = useState<'frame' | 'background' | 'badge'>('frame');
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [modalAnimateIn, setModalAnimateIn] = useState(false);
+  const [showPointsModal, setShowPointsModal] = useState(false);
+  const [pointsModalAnimateIn, setPointsModalAnimateIn] = useState(false);
 
   const filteredItems = ALL_SHOP_ITEMS.filter(item => item.type === activeTab);
 
@@ -30,6 +32,14 @@ const ShopPanel: React.FC<ShopPanelProps> = ({ user, onPurchase, onEquip, onBuyP
     // when showPremiumModal becomes false we keep modalAnimateIn false
     setModalAnimateIn(false);
   }, [showPremiumModal]);
+
+  useEffect(() => {
+    if (showPointsModal) {
+      const t = setTimeout(() => setPointsModalAnimateIn(true), 10);
+      return () => clearTimeout(t);
+    }
+    setPointsModalAnimateIn(false);
+  }, [showPointsModal]);
 
   return (
     <div className="max-w-6xl mx-auto animate-fade-in space-y-8 pb-12">
@@ -59,7 +69,16 @@ const ShopPanel: React.FC<ShopPanelProps> = ({ user, onPurchase, onEquip, onBuyP
                 <p className="text-xs text-yellow-100 uppercase font-bold tracking-wider">Tu Saldo</p>
                 <p className="text-3xl font-black text-white leading-none">{user.points || 0} <span className="text-lg font-medium text-yellow-400">pts</span></p>
              </div>
-            {/* Buy Premium Button */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowPointsModal(true)}
+                aria-label="Ayuda puntos"
+                title="Cómo funcionan los puntos"
+                className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition"
+              >
+                <HelpCircle size={18} />
+              </button>
+            </div>
             {/* Botón de comprar premium movido a la esquina superior derecha */}
           </div>
         </div>
@@ -74,7 +93,7 @@ const ShopPanel: React.FC<ShopPanelProps> = ({ user, onPurchase, onEquip, onBuyP
             </div>
             <div>
               <div className="font-extrabold text-lg">ReportaYa Premium</div>
-              <div className="text-sm text-white/80">Fondos exclusivos, tags únicos y soporte prioritario.</div>
+              <div className="text-sm text-white/80">Fondos exclusivos, etiquetas únicas y soporte prioritario.</div>
             </div>
           </div>
 
@@ -85,7 +104,7 @@ const ShopPanel: React.FC<ShopPanelProps> = ({ user, onPurchase, onEquip, onBuyP
             </div>
             <div className="flex items-center gap-3 bg-white/5 rounded-full px-3 py-2">
               <Trophy className="text-yellow-300" />
-              <span className="text-sm text-white/90">Tags premium</span>
+              <span className="text-sm text-white/90">Etiquetas premium</span>
             </div>
           </div>
 
@@ -136,7 +155,7 @@ const ShopPanel: React.FC<ShopPanelProps> = ({ user, onPurchase, onEquip, onBuyP
                 : 'text-gray-500 hover:text-primary hover:bg-gray-50'
               }`}
             >
-              <Trophy size={18} /> Tags
+              <Trophy size={18} /> Etiquetas
             </button>
         </div>
       </div>
@@ -260,7 +279,7 @@ const ShopPanel: React.FC<ShopPanelProps> = ({ user, onPurchase, onEquip, onBuyP
                       <p className="text-sm text-yellow-200">Mejora tu experiencia y desbloquea contenido exclusivo</p>
                     </div>
                   </div>
-                  <p className="text-sm text-white/80 mb-4">Consigue acceso inmediato a todos los fondos, tags y marcos exclusivos. Además, disfruta de prioridad en soporte y una experiencia sin anuncios.</p>
+                  <p className="text-sm text-white/80 mb-4">Consigue acceso inmediato a todos los fondos, etiquetas y marcos exclusivos. Además, disfruta de prioridad en soporte y una experiencia sin anuncios.</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="flex items-start gap-3">
                       <div className="mt-1 text-yellow-300"><Sparkles size={18} /></div>
@@ -272,7 +291,7 @@ const ShopPanel: React.FC<ShopPanelProps> = ({ user, onPurchase, onEquip, onBuyP
                     <div className="flex items-start gap-3">
                       <div className="mt-1 text-yellow-300"><Trophy size={18} /></div>
                       <div>
-                        <div className="font-semibold">Tags exclusivos</div>
+                        <div className="font-semibold">Etiquetas exclusivas</div>
                         <div className="text-xs text-white/80">Etiquetas y distintivos únicos para tu perfil.</div>
                       </div>
                     </div>
@@ -329,6 +348,66 @@ const ShopPanel: React.FC<ShopPanelProps> = ({ user, onPurchase, onEquip, onBuyP
             </div>
             <div className="p-4 bg-white text-right">
               <button onClick={() => { setModalAnimateIn(false); setTimeout(() => setShowPremiumModal(false), 280); }} className="text-sm text-indigo-900 font-semibold">Cerrar</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Points & XP Help Modal (floating-cards style) */}
+      {(showPointsModal || pointsModalAnimateIn) && (
+        <div className={`fixed inset-0 z-50 flex items-center justify-center ${pointsModalAnimateIn ? 'bg-black/50' : 'bg-black/0'}` }>
+          <div className={`w-full max-w-4xl rounded-3xl overflow-hidden shadow-2xl transform transition-all duration-300 ${pointsModalAnimateIn ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
+            <div className="p-6 bg-gradient-to-r from-indigo-900 to-primary text-white">
+              <div className="mb-6 text-center">
+                <h3 className="text-2xl font-extrabold">¿Cómo funcionan los Puntos y la XP?</h3>
+                <p className="text-white/80 max-w-2xl mx-auto mt-2">Resumen rápido de cómo ganar puntos, subir de nivel y canjearlos en la tienda.</p>
+              </div>
+
+              <div className="grid md:grid-cols-3 gap-6">
+                <div className="bg-white p-6 rounded-3xl shadow-xl border border-gray-100 text-left">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center text-primary">
+                      <ShoppingBag size={18} />
+                    </div>
+                    <h4 className="font-bold text-slate-800">Puntos</h4>
+                  </div>
+                  <p className="text-sm text-slate-600">Los puntos se obtienen al enviar reportes y se usan para canjear fondos, marcos e insignias en la tienda.</p>
+                  <ul className="mt-3 text-slate-600 list-disc list-inside space-y-1 text-sm">
+                    <li>Enviar un reporte: <strong>+10 puntos</strong>.</li>
+                    <li>Reportes validados pueden dar puntos adicionales.</li>
+                  </ul>
+                </div>
+
+                <div className="bg-white p-6 rounded-3xl shadow-xl border border-gray-100 text-left">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-teal-100 to-teal-50 flex items-center justify-center text-secondary">
+                      <Trophy size={18} />
+                    </div>
+                    <h4 className="font-bold text-slate-800">XP y Niveles</h4>
+                  </div>
+                  <p className="text-sm text-slate-600">La experiencia "XP" refleja tu actividad. Subiendo niveles desbloqueas etiquetas cada 20 niveles.</p>
+                  <ul className="mt-3 text-slate-600 list-disc list-inside space-y-1 text-sm">
+                    <li>Cada reporte te da <strong>+20 XP</strong>.</li>
+                    <li>Cada nivel requiere <strong>100 XP</strong>.</li>
+                  </ul>
+                </div>
+
+                <div className="bg-white p-6 rounded-3xl shadow-xl border border-gray-100 text-left">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-yellow-100 to-yellow-50 flex items-center justify-center text-yellow-600">
+                      <Gift size={18} />
+                    </div>
+                    <h4 className="font-bold text-slate-800">Tienda</h4>
+                  </div>
+                  <p className="text-sm text-slate-600">Canjea tus puntos por personalizaciones. Algunos artículos requieren Premium.</p>
+                  <ul className="mt-3 text-slate-600 list-disc list-inside space-y-1 text-sm">
+                    <li>Canjea puntos por marcos, fondos e insignias.</li>
+                    <li>Los artículos Premium sólo están disponibles para usuarios Premium.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <div className="p-4 bg-white text-right">
+              <button onClick={() => { setPointsModalAnimateIn(false); setTimeout(() => setShowPointsModal(false), 280); }} className="text-sm text-indigo-900 font-semibold">Cerrar</button>
             </div>
           </div>
         </div>

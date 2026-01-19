@@ -64,4 +64,5 @@ export interface User {
   experience?: number;
   profileTag?: string;
   premium?: boolean;
+  password?: string;
 }

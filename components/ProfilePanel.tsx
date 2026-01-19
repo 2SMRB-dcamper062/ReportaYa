@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { User, Issue, UserRole, IssueStatus } from '../types';
-import { SHOP_ITEMS, ALL_SHOP_ITEMS } from '../constants';
+import { SHOP_ITEMS, ALL_SHOP_ITEMS, EXCLUSIVE_BADGES } from '../constants';
 import { User as UserIcon, Mail, Shield, Camera, Edit2, Save, X, Star, Trophy, Gift, Lock, Bus, Landmark, Music, Zap, Check, Crown } from 'lucide-react';
 
 interface ProfilePanelProps {
@@ -17,7 +17,7 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ user, issues, onUpdateUser 
     const [name, setName] = useState(user.name);
     const [avatar, setAvatar] = useState(user.avatar || '');
     const [profileTag, setProfileTag] = useState<string>(user.profileTag || '');
-    const [selectedTagId, setSelectedTagId] = useState<string>(user.profileTag && ALL_SHOP_ITEMS.find(i => i.id === user.profileTag) ? user.profileTag : '');
+    const [selectedTagId, setSelectedTagId] = useState<string>(user.profileTag && (ALL_SHOP_ITEMS.find(i => i.id === user.profileTag) || EXCLUSIVE_BADGES.find(i => i.id === user.profileTag)) ? user.profileTag : '');
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const [toastMsg, setToastMsg] = useState<string | null>(null);
 
@@ -26,7 +26,7 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ user, issues, onUpdateUser 
         // Resolve profile tag name from shop or dynamic level badges
         const findDynamicBadge = (id?: string) => {
             if (!id) return undefined;
-            const fromShop = ALL_SHOP_ITEMS.find(i => i.id === id);
+            const fromShop = ALL_SHOP_ITEMS.find(i => i.id === id) || EXCLUSIVE_BADGES.find(i => i.id === id);
             if (fromShop) return fromShop;
             const m = id.match(/^tag_nivel_(\d+)$/);
             if (!m) return undefined;
@@ -77,8 +77,6 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ user, issues, onUpdateUser 
                 setBadgeWindowStart(Math.max(0, highestUnlockedIndex - (VISIBLE_BADGE_COUNT - 1)));
             }
         }, [currentLevel]);
-
-                                                    <span className="px-1 text-center truncate">{name}</span>
         const unlockedDynamicBadges = [] as { id: string; name: string }[];
         for (let lvl = 20; lvl <= currentLevel; lvl += 20) {
             const id = `tag_nivel_${lvl}`;
@@ -94,6 +92,9 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ user, issues, onUpdateUser 
         onUpdateUser({ ...user, name, avatar, profileTag: selectedTagId || '' });
         setIsEditing(false);
     };
+
+    // Badges owned by the user (includes exclusive badges for admin/dev visibility)
+    const ownedBadges = ([...ALL_SHOP_ITEMS, ...EXCLUSIVE_BADGES].filter(i => i.type === 'badge' && (((user.inventory || []).includes(i.id)) || (i.id === 'tag_admin' && user.role === UserRole.ADMIN))));
 
   return (
     <div className="max-w-5xl mx-auto animate-fade-in space-y-8 pb-10">
@@ -178,6 +179,18 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ user, issues, onUpdateUser 
                                             <Crown size={14} />
                                         </div>
                                     )}
+                                    {profileTagItem && (
+                                        <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-bold ${profileTagItem.previewValue} ${user.profileTag === profileTagItem.id ? 'ring-2 ring-yellow-400' : ''}`}>
+                                            {profileTagItem.name}
+                                        </span>
+                                    )}
+                                    {user.role === UserRole.ADMIN && (
+                                        <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-bold bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
+                                            ADMIN
+                                        </span>
+                                    )}
+                                    {/* DEV badge if in inventory */}
+                                    {/* Removed inline DEV/ADMIN label per request; Developer is highlighted in the Insignias section */}
                                 </span>
                             </h1>
                             <p className="text-gray-500 font-medium">
@@ -224,6 +237,16 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ user, issues, onUpdateUser 
                                 <Crown size={12} />
                             </div>
                         )}
+                        {profileTagItem && (
+                            <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-bold ${profileTagItem.previewValue} ${user.profileTag === profileTagItem.id ? 'ring-2 ring-yellow-400' : ''}`}>
+                                {profileTagItem.name}
+                            </span>
+                        )}
+                        {user.role === UserRole.ADMIN && (
+                            <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-bold bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
+                                ADMIN
+                            </span>
+                        )}
                     </h1>
                     <p className="text-gray-500 text-sm">{profileTagItem?.name || user.profileTag || (user.role === UserRole.ADMIN ? 'Administrador Municipal' : 'Ciudadano activo')}</p>
                </div>
@@ -233,7 +256,7 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ user, issues, onUpdateUser 
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* Left Column: Info & Stats */}
+        {/* Left Column: Info, Insignias & Stats */}
         <div className="space-y-6">
                     <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                         {/* Recompensas */}
@@ -249,8 +272,8 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ user, issues, onUpdateUser 
                                 <label className="text-xs text-gray-400">Tag de perfil (adquiridos)</label>
                                 <select value={selectedTagId} onChange={(e) => setSelectedTagId(e.target.value)} className="w-full p-3 border rounded-xl">
                                     <option value="">Ninguno</option>
-                                    {/* Badges owned from shop */}
-                                    {ALL_SHOP_ITEMS.filter(i => i.type === 'badge' && (user.inventory || []).includes(i.id)).map(b => (
+                                    {/* Insignias/etiquetas adquiridas (tienda y exclusivas) */}
+                                    {([...ALL_SHOP_ITEMS, ...EXCLUSIVE_BADGES].filter(i => i.type === 'badge' && (user.inventory || []).includes(i.id))).map(b => (
                                         <option key={b.id} value={b.id}>{b.name}</option>
                                     ))}
                                     {/* Dynamically include unlocked level badges (even if not yet claimed) */}
@@ -291,6 +314,21 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ user, issues, onUpdateUser 
                         </>
                     )}
                 </div>
+
+            {/* Owned Badges */}
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                <h3 className="font-bold text-gray-400 text-xs uppercase tracking-wider mb-4">Insignias</h3>
+                    <div className="flex flex-wrap gap-2">
+                    {ownedBadges.map(b => (
+                        <div key={b.id} className={`px-3 py-1 rounded-full text-xs font-semibold ${b.previewValue} ${(user.profileTag === b.id || b.id === 'tag_developer') ? 'ring-2 ring-yellow-400' : ''}`}>
+                            {b.name}
+                        </div>
+                    ))}
+                    {ownedBadges.length === 0 && (
+                        <div className="text-sm text-gray-400">No tienes insignias aún.</div>
+                    )}
+                </div>
+            </div>
             </div>
 
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
@@ -344,7 +382,7 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ user, issues, onUpdateUser 
                         
                             {/* Badges desbloqueables por nivel (debajo de la barra de progreso) */}
                             <div className="mb-6">
-                                <h3 className="text-sm text-blue-100 mb-3 font-semibold">Tags desbloqueables</h3>
+                                <h3 className="text-sm text-blue-100 mb-3 font-semibold">Etiquetas desbloqueables</h3>
                                 <div className="flex gap-3 items-center pr-6">
                                     {Array.from({ length: VISIBLE_BADGE_COUNT }).map((_, idx) => {
                                         const index = badgeWindowStart + idx;

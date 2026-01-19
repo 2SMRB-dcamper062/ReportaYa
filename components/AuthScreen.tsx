@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { UserRole, User } from '../types';
 import { Mail, Lock, X } from 'lucide-react';
 import { auth, googleProvider, db } from '../firebaseConfig';
-import { signInWithPopup, signInWithEmailAndPassword } from 'firebase/auth';
+import { MOCK_USERS } from '../constants';
+import { signInWithPopup, signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 
 interface AuthScreenProps {
@@ -15,6 +16,8 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onClose }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resetMsg, setResetMsg] = useState<string | null>(null);
+  const [resetErr, setResetErr] = useState<string | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,6 +28,28 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onClose }) => {
     }
 
     setLoading(true);
+    // Allow local mock users for quick testing without Firebase
+    const mock = MOCK_USERS.find(u => u.email === email && (u as any).password === password);
+    if (mock) {
+      setTimeout(() => {
+        onLogin({
+          id: mock.id,
+          name: mock.name,
+          role: mock.role,
+          email: mock.email,
+          points: mock.points || 0,
+          avatar: mock.avatar || '',
+          inventory: mock.inventory || [],
+          experience: mock.experience || 0,
+          equippedFrame: mock.equippedFrame || null,
+          equippedBackground: mock.equippedBackground || null,
+          profileTag: mock.profileTag || null,
+          premium: mock.premium || false,
+        });
+        setLoading(false);
+      }, 300);
+      return;
+    }
     // Shortcut for local admin credentials (useful for testing/offline)
     if (email === 'ayuntamiento@reportaya.es' && password === 'ayuntamiento') {
       // Directly log in as admin without calling Firebase (keeps app flow simple)
@@ -174,7 +199,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onClose }) => {
                 <input
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => { setEmail(e.target.value); setResetMsg(null); setResetErr(null); }}
                   className="pl-10 w-full border rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Correo electrónico"
                 />
@@ -200,6 +225,48 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onClose }) => {
             >
               {loading ? 'Cargando...' : 'Entrar →'}
             </button>
+            <div className="flex justify-between items-center">
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!email || !email.trim()) {
+                    setResetErr('Introduce tu correo para recibir el enlace de cambio de contraseña.');
+                    setResetMsg(null);
+                    return;
+                  }
+
+                  const mock = MOCK_USERS.find(u => u.email === email);
+                  if (mock) {
+                    setResetErr('Esta cuenta es de prueba local; el restablecimiento por correo solo funciona para cuentas reales.');
+                    setResetMsg(null);
+                    return;
+                  }
+
+                  try {
+                    await sendPasswordResetEmail(auth, email);
+                    setResetMsg(`Se ha enviado un correo de restablecimiento a ${email}. Revisa tu bandeja.`);
+                    setResetErr(null);
+                  } catch (err: any) {
+                    console.error('Error sending password reset email', err);
+                    setResetErr('No se pudo enviar el correo de restablecimiento: ' + (err?.message || String(err)));
+                    setResetMsg(null);
+                  }
+                }}
+                className="text-sm text-blue-600 hover:underline"
+              >
+                Cambiar contraseña
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsRegister(true)}
+                className="text-sm text-gray-500 hover:underline"
+              >
+                Crear cuenta
+              </button>
+            </div>
+            {resetMsg && <div className="text-sm text-green-600 mt-2">{resetMsg}</div>}
+            {resetErr && <div className="text-sm text-red-600 mt-2">{resetErr}</div>}
           </form>
           <div className="text-center mt-4 text-sm text-gray-500">O continúa con</div>
           <div className="flex justify-center mt-2">

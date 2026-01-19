@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { UserRole, Issue, IssueStatus, IssueCategory, User, ShopItem } from './types';
-import { MOCK_ISSUES, MOCK_USER, SEVILLA_CENTER, PREMIUM_COST_POINTS, SHOP_ITEMS } from './constants';
+import { MOCK_ISSUES, MOCK_USER, SEVILLA_CENTER, PREMIUM_COST_POINTS, SHOP_ITEMS, ALL_SHOP_ITEMS, EXCLUSIVE_BADGES } from './constants';
 import IssueMap from './components/IssueMap';
 import StatsPanel from './components/StatsPanel';
 import LandingPage from './components/LandingPage';
@@ -43,6 +43,8 @@ const Header = ({ user, activeTab, setActiveTab, onLogout, onLoginClick }: any) 
   const level = Math.floor(experience / 100) + 1;
   const expCurrent = Math.max(0, experience - (level - 1) * 100);
   const expTotal = 100;
+  const devItem = ALL_SHOP_ITEMS.find(i => i.id === 'tag_developer') || EXCLUSIVE_BADGES.find(i => i.id === 'tag_developer');
+  const hasDev = (user?.inventory || []).includes('tag_developer');
 
   const prevLevelRef = React.useRef(level);
   const [showLevelUp, setShowLevelUp] = React.useState(false);
@@ -151,10 +153,16 @@ const Header = ({ user, activeTab, setActiveTab, onLogout, onLoginClick }: any) 
                     <Crown size={12} />
                   </div>
                 )}
+                {/* (Removed avatar bubble) */}
               </div>
 
               <div className="hidden md:flex flex-col items-center justify-center leading-tight">
-                <div className="text-sm font-bold text-white group-hover:text-secondary transition text-center">{user.name.split(' ')[0]}</div>
+                <div className="text-sm font-bold text-white group-hover:text-secondary transition text-center flex items-center gap-2">
+                  <span>{user.name.split(' ')[0]}</span>
+                  {hasDev && (
+                    <span className={`ml-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${devItem?.previewValue || 'bg-sky-200 text-sky-800'}`}>{user.role === UserRole.ADMIN ? 'ADMIN' : 'DEV'}</span>
+                  )}
+                </div>
 
                 {user.role === UserRole.CITIZEN && (
                   <div className="flex items-center gap-2 mt-1">

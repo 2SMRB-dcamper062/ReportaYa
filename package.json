@@ -8,6 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "create-admin": "node server/create_admin.cjs"
+    ,
+    "seed:users": "node server/seed_users.cjs"
   },
   "dependencies": {
     "@google/genai": "^1.35.0",
