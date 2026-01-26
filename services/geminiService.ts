@@ -1,9 +1,43 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { IssueCategory } from '../types';
 
-const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GOOGLE_API_KEY });
+// API Key handling - only initialize if API key is available
+const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
+let ai: GoogleGenAI | null = null;
+
+try {
+  if (apiKey) {
+    ai = new GoogleGenAI({ apiKey });
+  } else {
+    console.warn("No API Key configured for Gemini. AI features will use fallback values.");
+  }
+} catch (error) {
+  console.warn("Failed to initialize GoogleGenAI:", error);
+}
 
 export const analyzeReportText = async (description: string): Promise<{ category: IssueCategory; suggestedTitle: string }> => {
+  // If AI is not configured, return fallback values
+  if (!ai) {
+    console.log("AI not configured, using fallback analysis");
+    // Simple keyword-based fallback
+    const lowerDesc = description.toLowerCase();
+    let category = IssueCategory.OTHER;
+    if (lowerDesc.includes('luz') || lowerDesc.includes('farola') || lowerDesc.includes('alumbrado')) {
+      category = IssueCategory.LIGHTING;
+    } else if (lowerDesc.includes('bache') || lowerDesc.includes('acera') || lowerDesc.includes('calle')) {
+      category = IssueCategory.INFRASTRUCTURE;
+    } else if (lowerDesc.includes('basura') || lowerDesc.includes('limpieza') || lowerDesc.includes('suciedad')) {
+      category = IssueCategory.CLEANING;
+    } else if (lowerDesc.includes('parque') || lowerDesc.includes('jardín') || lowerDesc.includes('árbol')) {
+      category = IssueCategory.PARKS;
+    }
+
+    return {
+      category,
+      suggestedTitle: description.split(' ').slice(0, 5).join(' ')
+    };
+  }
+
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
@@ -35,7 +69,7 @@ export const analyzeReportText = async (description: string): Promise<{ category
     if (response.text) {
       return JSON.parse(response.text);
     }
-    
+
     throw new Error("No response from AI");
   } catch (error) {
     console.error("Error analyzing report:", error);
@@ -50,7 +84,7 @@ export const validateIssueEvidence = async (imageUrl: string, category: string):
   // In a production environment, this would send the image (base64) to Gemini 1.5 Pro
   // to compare it against the category.
   // Since we are using mock URLs (picsum.photos), we simulate the analysis here.
-  
+
   return new Promise((resolve) => {
     setTimeout(() => {
       // Simulate a high confidence validation for demo purposes
