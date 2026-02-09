@@ -3,7 +3,7 @@
     width="1200"
     height="475"
     alt="GHBanner"
-    src="[https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6](https://drive.google.com/file/d/1whfQFfj6fxrmZNN_KoMyO6it8SLQ979l/view?usp=drive_link)"
+    src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6](https://drive.google.com/file/d/1whfQFfj6fxrmZNN_KoMyO6it8SLQ979l/view?usp=drive_link"
   />
 </div>
 
