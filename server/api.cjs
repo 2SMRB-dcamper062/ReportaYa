@@ -22,14 +22,34 @@
 const express = require('express');
 const cors = require('cors');
 const { MongoClient, ObjectId } = require('mongodb');
+const path = require('path');
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017';
 const DB_NAME = process.env.DB_NAME || 'reportaya';
-const PORT = process.env.API_PORT || 3005;
+const PORT = process.env.API_PORT || 3001;
 
 const app = express();
-app.use(cors());
-app.use(express.json({ limit: '50mb' }));
+
+// --- SECURITY HEADERS (Basic Helmet implementation) ---
+app.disable('x-powered-by');
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; frame-src https://js.stripe.com;");
+  next();
+});
+
+const corsOptions = {
+  origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : ['http://localhost:3000', 'http://localhost:3001'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+};
+app.use(cors(corsOptions));
+app.use(express.json({ limit: '10mb' })); // Reduced limit for security
+app.use(express.static(path.join(__dirname, '../dist')));
 
 let db;
 
@@ -91,11 +111,20 @@ app.get('/api/users/by-email/:email', async (req, res) => {
 app.put('/api/users/:id', async (req, res) => {
   try {
     const userData = { ...req.body, id: req.params.id };
-    // Never let client overwrite passwordHash
+
+    // --- PREVENT PRIVILEGE ESCALATION ---
+    // User cannot change their own role or premium status via this endpoint
+    delete userData.role;
+    delete userData.premium;
     delete userData.passwordHash;
     delete userData.plainPassword;
     delete userData.password;
     delete userData._id;
+    delete userData.points; // Points should be managed by the server
+
+    // Basic validation
+    if (userData.name && typeof userData.name !== 'string') return res.status(400).json({ error: 'Nombre inválido' });
+    if (userData.email && typeof userData.email !== 'string') return res.status(400).json({ error: 'Email inválido' });
 
     await db.collection('users').updateOne(
       { id: req.params.id },
@@ -150,12 +179,13 @@ app.post('/api/users/register', async (req, res) => {
     if (bcrypt) {
       userProfile.passwordHash = await bcrypt.hash(password, 10);
     } else {
-      // Fallback — not recommended for production
-      userProfile.plainPassword = password;
+      console.error('❌ Error: bcryptjs no está disponible. No se puede registrar usuario de forma segura.');
+      return res.status(500).json({ error: 'El sistema de seguridad no está disponible actualmente.' });
     }
 
     await db.collection('users').insertOne(userProfile);
 
+    // Sanitize output
     const { passwordHash, plainPassword, _id, ...safeUser } = userProfile;
     res.status(201).json(safeUser);
   } catch (err) {
@@ -181,22 +211,18 @@ app.post('/api/users/login', async (req, res) => {
         const match = await bcrypt.compare(password, user.passwordHash);
         if (!match) return res.status(401).json({ error: 'Credenciales inválidas' });
       } else {
-        // Fallback: plain text comparison (not recommended for production)
-        if (user.plainPassword && user.plainPassword !== password) {
-          return res.status(401).json({ error: 'Credenciales inválidas' });
-        }
+        // Fallback: plain text comparison (DEPRECATED - REMOVING FOR SECURITY)
+        return res.status(401).json({ error: 'Credenciales inválidas (Seguridad actualizada)' });
       }
     } else if (user.plainPassword) {
-      // Legacy plain password
-      if (user.plainPassword !== password) {
-        return res.status(401).json({ error: 'Credenciales inválidas' });
-      }
+      // Legacy plain password block - Deny access and suggest reset
+      return res.status(401).json({ error: 'Su cuenta requiere una actualización de seguridad. Por favor, restablezca su contraseña.' });
     } else {
       // No password stored — deny login
       return res.status(401).json({ error: 'Esta cuenta no tiene contraseña configurada. Use login social.' });
     }
 
-    const { passwordHash, plainPassword, _id, ...safeUser } = user;
+    const { passwordHash, plainPassword, _id, sessions, ...safeUser } = user;
     res.json(safeUser);
   } catch (err) {
     console.error('Error POST /api/users/login', err);
@@ -239,6 +265,15 @@ app.get('/api/reports/:id', async (req, res) => {
 app.post('/api/reports', async (req, res) => {
   try {
     const report = { ...req.body };
+
+    // Basic Validation
+    if (!report.title || typeof report.title !== 'string' || report.title.length < 3) {
+      return res.status(400).json({ error: 'Título inválido o demasiado corto' });
+    }
+    if (!report.description || typeof report.description !== 'string') {
+      return res.status(400).json({ error: 'Descripción requerida' });
+    }
+
     if (!report.id) report.id = Date.now().toString();
     report.createdAt = report.createdAt || new Date().toISOString();
 
@@ -406,3 +441,18 @@ connectDB()
     console.error('❌ No se pudo conectar a MongoDB:', err);
     process.exit(1);
   });
+
+// ─── SERVE FRONTEND (Optional: for production) ─────────────────────
+app.get('*', (req, res) => {
+  // If request is not an API call, serve the frontend
+  if (!req.path.startsWith('/api') &&
+    !req.path.startsWith('/create-checkout-session') &&
+    !req.path.startsWith('/revoke-sessions')) {
+    res.sendFile(path.join(__dirname, '../dist/index.html'), (err) => {
+      if (err) {
+        // Fallback or error if dist is not built
+        res.status(404).send('Frontend not built. Run "npm run build" first.');
+      }
+    });
+  }
+});

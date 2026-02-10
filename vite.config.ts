@@ -8,11 +8,12 @@ export default defineConfig(({ mode }) => {
     server: {
       allowedHosts: true,
       port: 3000,
+      strictPort: true,
       host: '0.0.0.0',
       proxy: {
-        '/api': 'http://localhost:3005',
-        '/create-checkout-session': 'http://localhost:3005',
-        '/revoke-sessions': 'http://localhost:3005'
+        '/api': 'http://localhost:3001',
+        '/create-checkout-session': 'http://localhost:3001',
+        '/revoke-sessions': 'http://localhost:3001'
       }
     },
     plugins: [react()],
