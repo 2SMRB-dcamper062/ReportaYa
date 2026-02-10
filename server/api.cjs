@@ -25,7 +25,7 @@ const { MongoClient, ObjectId } = require('mongodb');
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017';
 const DB_NAME = process.env.DB_NAME || 'reportaya';
-const PORT = process.env.API_PORT || 3001;
+const PORT = process.env.API_PORT || 3005;
 
 const app = express();
 app.use(cors());
