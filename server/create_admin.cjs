@@ -1,15 +1,17 @@
 #!/usr/bin/env node
 /**
  * create_admin.cjs
- * Small utility to create a Firebase Auth user and a Firestore `users/{uid}` document
- * Use with a service account JSON. Not for browser use.
+ * Utility to create an admin user directly in MongoDB.
+ * No Firebase dependency needed.
  *
- * Usage examples:
- *  SERVICE_ACCOUNT_PATH=./serviceAccount.json node server/create_admin.cjs -- --email=admin@example.com --password=Secret123 --name="Ayuntamiento Sevilla"
+ * Usage:
+ *   node server/create_admin.cjs --email=admin@example.com --password=Secret123 --name="Ayuntamiento Sevilla"
  */
 
-const fs = require('fs');
-const path = require('path');
+const { MongoClient } = require('mongodb');
+
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017';
+const DB_NAME = process.env.DB_NAME || 'reportaya';
 
 function parseArgs() {
   const args = {};
@@ -25,35 +27,6 @@ function parseArgs() {
 async function main() {
   const args = parseArgs();
 
-  const serviceAccountPath = process.env.SERVICE_ACCOUNT_PATH || args.serviceAccount;
-  let serviceAccount = null;
-  if (serviceAccountPath) {
-    const abs = path.resolve(serviceAccountPath);
-    if (!fs.existsSync(abs)) {
-      console.error('Service account file not found:', abs);
-      process.exit(1);
-    }
-    serviceAccount = require(abs);
-  } else if (process.env.SERVICE_ACCOUNT_JSON) {
-    try {
-      serviceAccount = JSON.parse(process.env.SERVICE_ACCOUNT_JSON);
-    } catch (e) {
-      console.error('Invalid SERVICE_ACCOUNT_JSON');
-      process.exit(1);
-    }
-  } else {
-    console.error('Provide a service account via SERVICE_ACCOUNT_PATH or SERVICE_ACCOUNT_JSON');
-    process.exit(1);
-  }
-
-  const admin = require('firebase-admin');
-
-  try {
-    admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
-  } catch (e) {
-    // already initialized? ignore
-  }
-
   const email = args.email;
   if (!email) {
     console.error('Missing --email=EMAIL argument');
@@ -64,44 +37,28 @@ async function main() {
   const name = args.name || 'Ayuntamiento';
   const initialPoints = parseInt(args.points || '0', 10) || 0;
 
+  let bcrypt;
   try {
-    // Check if user already exists by email
-    let userRecord;
-    try {
-      userRecord = await admin.auth().getUserByEmail(email);
-      console.log('User already exists in Auth with uid:', userRecord.uid);
-      const uid = userRecord.uid;
-      const db = admin.firestore();
-      await db.collection('users').doc(uid).set({
-        id: uid,
-        name,
-        email,
-        role: 'admin',
-        inventory: [],
-        equippedFrame: null,
-        equippedBackground: null,
-        points: initialPoints,
-        experience: 0,
-        premium: false,
-        avatar: '',
-      }, { merge: true });
-      console.log('Updated Firestore document users/%s (merge) with admin role.', uid);
-      process.exit(0);
-    } catch (e) {
-      // Not found -> create
-    }
+    bcrypt = require('bcryptjs');
+  } catch (e) {
+    console.error('bcryptjs not found. Run: npm install bcryptjs');
+    process.exit(1);
+  }
 
-    userRecord = await admin.auth().createUser({
-      email,
-      password,
-      displayName: name,
-    });
+  const client = new MongoClient(MONGO_URI);
 
-    const uid = userRecord.uid;
+  try {
+    await client.connect();
+    const db = client.db(DB_NAME);
+    const usersCol = db.collection('users');
 
-    const db = admin.firestore();
-    await db.collection('users').doc(uid).set({
-      id: uid,
+    // Hash the password
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    const adminId = `admin-${email.replace(/[^a-z0-9]/gi, '-')}`;
+
+    const adminProfile = {
+      id: adminId,
       name,
       email,
       role: 'admin',
@@ -112,13 +69,28 @@ async function main() {
       experience: 0,
       premium: false,
       avatar: '',
-    });
+      passwordHash,
+    };
 
-    console.log('Created admin user:', { uid, email, password });
-    console.log('Firestore document users/%s created with role admin.', uid);
+    // Upsert: create or update
+    const result = await usersCol.updateOne(
+      { email },
+      { $set: adminProfile },
+      { upsert: true }
+    );
+
+    if (result.upsertedCount > 0) {
+      console.log('✅ Admin creado:', { id: adminId, email, password });
+    } else {
+      console.log('✅ Admin actualizado:', { id: adminId, email });
+    }
+
+    console.log(`Documento en colección 'users' con rol admin.`);
   } catch (err) {
-    console.error('Error creating or updating admin user:', err);
+    console.error('❌ Error creando/actualizando admin:', err);
     process.exit(1);
+  } finally {
+    await client.close();
   }
 }
 

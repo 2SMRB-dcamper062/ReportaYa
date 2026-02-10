@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { UserRole, User } from '../types';
 import { Mail, Lock, X } from 'lucide-react';
-import { auth, googleProvider, db } from '../firebaseConfig';
+import { auth, googleProvider } from '../firebaseConfig';
 import { MOCK_USERS } from '../constants';
 import { signInWithPopup, signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { apiGetUser, apiSaveUser } from '../services/api';
 
 interface AuthScreenProps {
   onLogin: (user: User) => void;
@@ -91,40 +91,41 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onClose }) => {
         onLogin(minimalUser);
         setLoading(false);
 
-        // Try to load Firestore profile, but don't block the UI — use a short timeout
+        // Try to load MongoDB profile, but don't block the UI — use a short timeout
         try {
-          const docRef = doc(db, 'users', u.uid);
-
+          const profileFetch = apiGetUser(u.uid);
           const timedGet = (ms: number) => {
             return Promise.race([
-              getDoc(docRef),
-              new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms)),
+              profileFetch,
+              new Promise<null>((resolve) => setTimeout(() => resolve(null), ms)),
             ]);
           };
 
-          const snap = await timedGet(1000); // 1s timeout (faster perceived login)
-          if (snap && (snap as any).exists && (snap as any).exists()) {
-            const profileData = (snap as any).data();
+          const profileData = await timedGet(1000); // 1s timeout (faster perceived login)
+          if (profileData) {
             const updatedUser: User = {
               id: u.uid,
-              name: profileData?.name || minimalUser.name,
-              role: (profileData?.role as UserRole) || UserRole.CITIZEN,
-              email: profileData?.email || minimalUser.email,
-              points: profileData?.points || 0,
-              avatar: profileData?.avatar || minimalUser.avatar || '',
-              inventory: profileData?.inventory || [],
-              experience: profileData?.experience || 0,
-              equippedFrame: profileData?.equippedFrame || null,
-              equippedBackground: profileData?.equippedBackground || null,
-              profileTag: profileData?.profileTag || null,
-              premium: profileData?.premium || false,
+              name: profileData.name || minimalUser.name,
+              role: (profileData.role as UserRole) || UserRole.CITIZEN,
+              email: profileData.email || minimalUser.email,
+              points: profileData.points || 0,
+              avatar: profileData.avatar || minimalUser.avatar || '',
+              inventory: profileData.inventory || [],
+              experience: profileData.experience || 0,
+              equippedFrame: profileData.equippedFrame || null,
+              equippedBackground: profileData.equippedBackground || null,
+              profileTag: profileData.profileTag || null,
+              premium: profileData.premium || false,
             };
             // Update app with full profile
             onLogin(updatedUser);
+          } else {
+            // No profile found — save the minimal user to MongoDB
+            apiSaveUser(minimalUser).catch(err => console.error('Error guardando perfil nuevo en MongoDB:', err));
           }
         } catch (err) {
           // Silently ignore profile fetch problems — user is already logged in optimistically
-          console.warn('Perfil Firestore no disponible o tardó demasiado:', err);
+          console.warn('Perfil MongoDB no disponible o tardó demasiado:', err);
         }
       })
       .catch((err) => {
@@ -137,31 +138,34 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onClose }) => {
   const handleGoogleSignIn = async () => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
-      const user = result.user;
-      // Try load Firestore profile
-      let profileData: any = null;
+      const firebaseUser = result.user;
+      // Try load MongoDB profile
+      let profileData: User | null = null;
       try {
-        const docRef = doc(db, 'users', user.uid);
-        const snap = await getDoc(docRef);
-        if (snap.exists()) profileData = snap.data();
+        profileData = await apiGetUser(firebaseUser.uid);
       } catch (err) {
-        console.error('Error fetching user profile from Firestore', err);
+        console.error('Error fetching user profile from MongoDB', err);
       }
 
-      onLogin({
-        id: user.uid,
-        name: profileData?.name || user.displayName || 'Usuario',
+      const loginUser: User = {
+        id: firebaseUser.uid,
+        name: profileData?.name || firebaseUser.displayName || 'Usuario',
         role: (profileData?.role as UserRole) || UserRole.CITIZEN,
-        email: user.email || '',
+        email: profileData?.email || firebaseUser.email || '',
         points: profileData?.points || 0,
-        avatar: profileData?.avatar || user.photoURL || '',
+        avatar: profileData?.avatar || firebaseUser.photoURL || '',
         inventory: profileData?.inventory || [],
         experience: profileData?.experience || 0,
         equippedFrame: profileData?.equippedFrame || null,
         equippedBackground: profileData?.equippedBackground || null,
         profileTag: profileData?.profileTag || null,
         premium: profileData?.premium || false,
-      });
+      };
+
+      onLogin(loginUser);
+
+      // Save/update profile in MongoDB
+      apiSaveUser(loginUser).catch(err => console.error('Error guardando perfil Google en MongoDB:', err));
     } catch (error) {
       console.error('Error al iniciar sesión con Google:', error);
     }

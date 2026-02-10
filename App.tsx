@@ -30,8 +30,7 @@ import {
   Sparkles,
   Crown
 } from 'lucide-react';
-import { db } from './firebaseConfig';
-import { doc, setDoc, collection, addDoc } from 'firebase/firestore';
+import { apiSaveUser, apiSaveReport, apiGetReports, apiGetUser, apiGetUserByEmail, apiUpdateReport } from './services/api';
 import { debounce } from 'lodash';
 import { signInWithPopup } from "firebase/auth";
 import { auth, googleProvider, facebookProvider } from "./firebaseConfig";
@@ -62,131 +61,131 @@ const Header = ({ user, activeTab, setActiveTab, onLogout, onLoginClick }: any) 
   }, [user?.experience]);
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-primary/95 backdrop-blur-md shadow-lg border-b border-white/5 transition-all duration-300">
-    <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-      <div className="flex items-center gap-3 hover:opacity-80 transition cursor-pointer group" onClick={() => setActiveTab('home')}>
-        <img src="/logo.png" alt="Reporta Ya Logo" className="h-12 object-contain" />
-      </div>
+      <div className="container mx-auto px-4 py-3 flex justify-between items-center">
+        <div className="flex items-center gap-3 hover:opacity-80 transition cursor-pointer group" onClick={() => setActiveTab('home')}>
+          <img src="/logo.png" alt="Reporta Ya Logo" className="h-12 object-contain" />
+        </div>
 
-      <nav className="flex items-center gap-1 md:gap-2 bg-white/5 p-1 rounded-full border border-white/10 backdrop-blur-sm">
-        {/* Navigation for everyone */}
-        <button
-          onClick={() => setActiveTab('home')}
-          className={`p-2.5 rounded-full transition-all duration-200 ${activeTab === 'home' ? 'bg-secondary text-primary shadow-md' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}
-          title="Inicio"
-        >
-          <Home size={18} />
-        </button>
-
-        <button
-          onClick={() => setActiveTab('map')}
-          className={`p-2.5 rounded-full transition-all duration-200 ${activeTab === 'map' ? 'bg-secondary text-primary shadow-md' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}
-          title="Mapa de Incidencias"
-        >
-          <MapPin size={18} />
-        </button>
-
-        {/* Only Citizen can report */}
-        {(user?.role === UserRole.CITIZEN || !user) && (
+        <nav className="flex items-center gap-1 md:gap-2 bg-white/5 p-1 rounded-full border border-white/10 backdrop-blur-sm">
+          {/* Navigation for everyone */}
           <button
-            onClick={() => {
-              if (!user) onLoginClick();
-              else setActiveTab('create');
-            }}
-            className={`p-2.5 rounded-full transition-all duration-200 ${activeTab === 'create' ? 'bg-secondary text-primary shadow-md' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}
-            title="Crear Reporte"
+            onClick={() => setActiveTab('home')}
+            className={`p-2.5 rounded-full transition-all duration-200 ${activeTab === 'home' ? 'bg-secondary text-primary shadow-md' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}
+            title="Inicio"
           >
-            <PlusCircle size={18} />
+            <Home size={18} />
           </button>
-        )}
 
-        {/* Only Admin can see stats */}
-        {user?.role === UserRole.ADMIN && (
           <button
-            onClick={() => setActiveTab('admin')}
-            className={`p-2.5 rounded-full transition-all duration-200 ${activeTab === 'admin' ? 'bg-secondary text-primary shadow-md' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}
-            title="Panel Admin"
+            onClick={() => setActiveTab('map')}
+            className={`p-2.5 rounded-full transition-all duration-200 ${activeTab === 'map' ? 'bg-secondary text-primary shadow-md' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}
+            title="Mapa de Incidencias"
           >
-            <BarChart2 size={18} />
+            <MapPin size={18} />
           </button>
-        )}
 
-        {/* Shop for Citizens */}
-        {user?.role === UserRole.CITIZEN && (
-          <button
-            onClick={() => setActiveTab('shop')}
-            className={`p-2.5 rounded-full transition-all duration-200 ${activeTab === 'shop' ? 'bg-secondary text-primary shadow-md' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}
-            title="Tienda de Puntos"
-          >
-            <ShoppingBag size={18} />
-          </button>
-        )}
-      </nav>
-
-      <div className="flex items-center gap-3">
-        {user ? (
-          <>
+          {/* Only Citizen can report */}
+          {(user?.role === UserRole.CITIZEN || !user) && (
             <button
-              onClick={() => setActiveTab('profile')}
-              className={`flex items-center gap-3 pl-1 pr-3 py-1 rounded-full transition group border border-transparent ${activeTab === 'profile' ? 'bg-white/10 border-white/20' : 'hover:bg-white/5'}`}
+              onClick={() => {
+                if (!user) onLoginClick();
+                else setActiveTab('create');
+              }}
+              className={`p-2.5 rounded-full transition-all duration-200 ${activeTab === 'create' ? 'bg-secondary text-primary shadow-md' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}
+              title="Crear Reporte"
             >
-              <div className="relative">
-                {(() => {
-                  const framePreview = user?.equippedFrame ? (SHOP_ITEMS.find(i => i.id === user.equippedFrame)?.previewValue || 'border-white/50') : 'border-white/50';
-                  return (
-                    <img
-                      src={user.avatar || `https://ui-avatars.com/api/?name=${user.name}&background=random`}
-                      alt="avatar"
-                      className={`w-9 h-9 rounded-full border-2 ${framePreview} object-cover`}
-                    />
-                  );
-                })()}
+              <PlusCircle size={18} />
+            </button>
+          )}
 
-                {/* Online Dot */}
-                <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-400 rounded-full border-2 border-primary"></div>
-                {showLevelUp && (
-                  <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center text-white shadow-lg animate-bounce z-50">
-                    <Zap size={14} />
-                  </div>
-                )}
-                {user.premium && (
-                  <div className="absolute -top-2 left-8 w-6 h-6 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 shadow-md z-40">
-                    <Crown size={12} />
-                  </div>
-                )}
-                {/* (Removed avatar bubble) */}
-              </div>
+          {/* Only Admin can see stats */}
+          {user?.role === UserRole.ADMIN && (
+            <button
+              onClick={() => setActiveTab('admin')}
+              className={`p-2.5 rounded-full transition-all duration-200 ${activeTab === 'admin' ? 'bg-secondary text-primary shadow-md' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}
+              title="Panel Admin"
+            >
+              <BarChart2 size={18} />
+            </button>
+          )}
 
-              <div className="hidden md:flex flex-col items-center justify-center leading-tight">
-                <div className="text-sm font-bold text-white group-hover:text-secondary transition text-center flex items-center gap-2">
-                  <span>{user.name.split(' ')[0]}</span>
-                  {hasDev && (
-                    <span className={`ml-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${devItem?.previewValue || 'bg-sky-200 text-sky-800'}`}>{user.role === UserRole.ADMIN ? 'ADMIN' : 'DEV'}</span>
+          {/* Shop for Citizens */}
+          {user?.role === UserRole.CITIZEN && (
+            <button
+              onClick={() => setActiveTab('shop')}
+              className={`p-2.5 rounded-full transition-all duration-200 ${activeTab === 'shop' ? 'bg-secondary text-primary shadow-md' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}
+              title="Tienda de Puntos"
+            >
+              <ShoppingBag size={18} />
+            </button>
+          )}
+        </nav>
+
+        <div className="flex items-center gap-3">
+          {user ? (
+            <>
+              <button
+                onClick={() => setActiveTab('profile')}
+                className={`flex items-center gap-3 pl-1 pr-3 py-1 rounded-full transition group border border-transparent ${activeTab === 'profile' ? 'bg-white/10 border-white/20' : 'hover:bg-white/5'}`}
+              >
+                <div className="relative">
+                  {(() => {
+                    const framePreview = user?.equippedFrame ? (SHOP_ITEMS.find(i => i.id === user.equippedFrame)?.previewValue || 'border-white/50') : 'border-white/50';
+                    return (
+                      <img
+                        src={user.avatar || `https://ui-avatars.com/api/?name=${user.name}&background=random`}
+                        alt="avatar"
+                        className={`w-9 h-9 rounded-full border-2 ${framePreview} object-cover`}
+                      />
+                    );
+                  })()}
+
+                  {/* Online Dot */}
+                  <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-400 rounded-full border-2 border-primary"></div>
+                  {showLevelUp && (
+                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center text-white shadow-lg animate-bounce z-50">
+                      <Zap size={14} />
+                    </div>
                   )}
+                  {user.premium && (
+                    <div className="absolute -top-2 left-8 w-6 h-6 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 shadow-md z-40">
+                      <Crown size={12} />
+                    </div>
+                  )}
+                  {/* (Removed avatar bubble) */}
                 </div>
 
-                {user.role === UserRole.CITIZEN && (
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-[10px] bg-secondary/20 text-secondary px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Lvl {level}</span>
-                    <span className="text-[11px] text-white/70">{expCurrent}/{expTotal} EXP</span>
+                <div className="hidden md:flex flex-col items-center justify-center leading-tight">
+                  <div className="text-sm font-bold text-white group-hover:text-secondary transition text-center flex items-center gap-2">
+                    <span>{user.name.split(' ')[0]}</span>
+                    {hasDev && (
+                      <span className={`ml-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${devItem?.previewValue || 'bg-sky-200 text-sky-800'}`}>{user.role === UserRole.ADMIN ? 'ADMIN' : 'DEV'}</span>
+                    )}
                   </div>
-                )}
-              </div>
+
+                  {user.role === UserRole.CITIZEN && (
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-[10px] bg-secondary/20 text-secondary px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Lvl {level}</span>
+                      <span className="text-[11px] text-white/70">{expCurrent}/{expTotal} EXP</span>
+                    </div>
+                  )}
+                </div>
+              </button>
+              <button onClick={onLogout} className="p-2.5 hover:bg-red-500/20 text-white/60 hover:text-red-400 rounded-full transition" title="Cerrar Sesión">
+                <LogOut size={18} />
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={onLoginClick}
+              className="flex items-center gap-2 bg-white text-primary px-5 py-2 rounded-full font-bold transition hover:bg-gray-100 shadow-md text-sm"
+            >
+              <span className="hidden sm:inline">Entrar</span>
             </button>
-            <button onClick={onLogout} className="p-2.5 hover:bg-red-500/20 text-white/60 hover:text-red-400 rounded-full transition" title="Cerrar Sesión">
-              <LogOut size={18} />
-            </button>
-          </>
-        ) : (
-          <button
-            onClick={onLoginClick}
-            className="flex items-center gap-2 bg-white text-primary px-5 py-2 rounded-full font-bold transition hover:bg-gray-100 shadow-md text-sm"
-          >
-            <span className="hidden sm:inline">Entrar</span>
-          </button>
-        )}
+          )}
+        </div>
       </div>
-    </div>
-  </header>
+    </header>
   );
 };
 
@@ -559,6 +558,15 @@ const App = () => {
   const [user, setUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState<'home' | 'map' | 'create' | 'admin' | 'profile' | 'shop'>('home');
   const [issues, setIssues] = useState<Issue[]>([]);
+
+  // Load reports from MongoDB on mount
+  useEffect(() => {
+    apiGetReports().then(reports => {
+      if (reports.length > 0) {
+        setIssues(reports);
+      }
+    }).catch(err => console.error('Error cargando reportes desde MongoDB:', err));
+  }, []);
   const [filterCategory, setFilterCategory] = useState<string>('All');
   const [filterStatus, setFilterStatus] = useState<string>('All');
   const [focusedIssue, setFocusedIssue] = useState<Issue | null>(null);
@@ -595,7 +603,7 @@ const App = () => {
 
   const handleUpdateUser = async (updatedUser: User) => {
     setUser(updatedUser);
-    await saveUserProfile(updatedUser);
+    await apiSaveUser(updatedUser);
   };
 
   const handleShopPurchase = (item: ShopItem) => {
@@ -619,7 +627,7 @@ const App = () => {
     };
     setUser(updatedUser);
     // Persist profile change
-    saveUserProfile(updatedUser).catch(err => console.error('Error guardando compra en tienda:', err));
+    apiSaveUser(updatedUser).catch(err => console.error('Error guardando compra en tienda:', err));
   };
 
   const handleEquipItem = (item: ShopItem) => {
@@ -653,7 +661,7 @@ const App = () => {
       points: (user.points || 0) - cost,
     };
     setUser(updatedUser);
-    saveUserProfile(updatedUser).catch(err => console.error('Error guardando compra premium:', err));
+    apiSaveUser(updatedUser).catch(err => console.error('Error guardando compra premium:', err));
     alert('Gracias por comprar Premium. Tu cuenta ha sido actualizada.');
   };
 
@@ -696,12 +704,12 @@ const App = () => {
       setIssues(prev => [...prev, newIssue]);
 
       // Persist report in background so UI/navigation isn't blocked by large image uploads
-      saveReport(newIssue)
-        .then(() => console.log('Reporte guardado exitosamente en Firestore.'))
+      apiSaveReport(newIssue)
+        .then(() => console.log('Reporte guardado exitosamente en MongoDB.'))
         .catch(err => console.error('Error al guardar el reporte (background):', err));
 
       // Otorgar puntos y experiencia al enviar el reporte (no bloqueante)
-        if (user) {
+      if (user) {
         // Puntos normales por reporte
         const newPoints = (user.points || 0) + 10;
         const updatedUser = {
@@ -714,7 +722,7 @@ const App = () => {
         setUser(updatedUser);
 
         // Persist in background (don't await to avoid blocking map navigation)
-        saveUserProfile(updatedUser).catch(err => console.error('Error guardando perfil de usuario:', err));
+        apiSaveUser(updatedUser).catch(err => console.error('Error guardando perfil de usuario:', err));
       }
 
       // Navegar al mapa y enfocar la incidencia creada.
@@ -731,11 +739,15 @@ const App = () => {
 
   const handleStatusChange = (id: string, newStatus: IssueStatus) => {
     setIssues(issues.map(i => i.id === id ? { ...i, status: newStatus } : i));
+    // Persist status change to MongoDB
+    apiUpdateReport(id, { status: newStatus }).catch(err => console.error('Error actualizando estado en MongoDB:', err));
   };
 
   const handleIssueUpdate = (updatedIssue: Issue) => {
     setIssues(issues.map(i => i.id === updatedIssue.id ? updatedIssue : i));
     setSelectedIssue(updatedIssue); // Update the modal view as well
+    // Persist issue update to MongoDB
+    apiUpdateReport(updatedIssue.id, updatedIssue).catch(err => console.error('Error actualizando reporte en MongoDB:', err));
   };
 
   const filteredIssues = issues.filter(i => {
@@ -773,13 +785,11 @@ const App = () => {
     </div>
   );
 
-  // Declarar las funciones saveUserProfile y saveReport antes de su uso
+  // Las funciones saveUserProfile y saveReport ahora usan la API REST de MongoDB
   const saveUserProfile = async (user: User) => {
     try {
-      const userId = user.email || user.id || 'unknown_user';
-      const userRef = doc(db, 'users', userId);
-      await setDoc(userRef, user);
-      console.log('Perfil actualizado correctamente.');
+      await apiSaveUser(user);
+      console.log('Perfil actualizado correctamente en MongoDB.');
     } catch (error) {
       console.error('Error al guardar el perfil:', error);
     }
@@ -787,9 +797,8 @@ const App = () => {
 
   const saveReport = async (report: Issue) => {
     try {
-      const reportsRef = collection(db, 'reports');
-      await addDoc(reportsRef, report);
-      console.log('Reporte guardado correctamente.');
+      await apiSaveReport(report);
+      console.log('Reporte guardado correctamente en MongoDB.');
     } catch (error) {
       console.error('Error al guardar el reporte:', error);
     }
@@ -800,24 +809,37 @@ const App = () => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       console.log("Resultado del inicio de sesión:", result);
-      const user = result.user;
-      console.log("Usuario autenticado:", user);
-      handleLogin({
-        id: user.uid, // Added missing id property
-        name: user.displayName || "Usuario",
-        email: user.email || "",
-        avatar: user.photoURL || "",
-        role: UserRole.CITIZEN, // Puedes ajustar el rol según tu lógica
-        points: 0,
-        experience: 0,
-        inventory: [], // Added missing inventory property
-      });
+      const firebaseUser = result.user;
+      console.log("Usuario autenticado:", firebaseUser);
+
+      // Try to load profile from MongoDB
+      let profileData = await apiGetUser(firebaseUser.uid);
+
+      const loginUser: User = {
+        id: firebaseUser.uid,
+        name: profileData?.name || firebaseUser.displayName || "Usuario",
+        email: profileData?.email || firebaseUser.email || "",
+        avatar: profileData?.avatar || firebaseUser.photoURL || "",
+        role: (profileData?.role as UserRole) || UserRole.CITIZEN,
+        points: profileData?.points || 0,
+        experience: profileData?.experience || 0,
+        inventory: profileData?.inventory || [],
+        equippedFrame: profileData?.equippedFrame || null,
+        equippedBackground: profileData?.equippedBackground || null,
+        profileTag: profileData?.profileTag || null,
+        premium: profileData?.premium || false,
+      };
+
+      handleLogin(loginUser);
+
+      // Save/update profile in MongoDB
+      apiSaveUser(loginUser).catch(err => console.error('Error guardando perfil Google en MongoDB:', err));
 
       // Ensure the user is redirected to the map after login
       setActiveTab('map');
     } catch (error) {
       console.error("Error al iniciar sesión con Google:", error);
-      alert(`Error al iniciar sesión: ${error.message}`);
+      alert(`Error al iniciar sesión: ${(error as any).message}`);
     }
   };
 
@@ -826,21 +848,34 @@ const App = () => {
     try {
       const result = await signInWithPopup(auth, facebookProvider);
       console.log("Resultado del inicio de sesión con Facebook:", result);
-      const user = result.user;
-      console.log("Usuario autenticado con Facebook:", user);
-      handleLogin({
-        id: user.uid, // Added missing id property
-        name: user.displayName || "Usuario",
-        email: user.email || "",
-        avatar: user.photoURL || "",
-        role: UserRole.CITIZEN, // Puedes ajustar el rol según tu lógica
-        points: 0,
-        experience: 0,
-        inventory: [], // Added missing inventory property
-      });
+      const firebaseUser = result.user;
+      console.log("Usuario autenticado con Facebook:", firebaseUser);
+
+      // Try to load profile from MongoDB
+      let profileData = await apiGetUser(firebaseUser.uid);
+
+      const loginUser: User = {
+        id: firebaseUser.uid,
+        name: profileData?.name || firebaseUser.displayName || "Usuario",
+        email: profileData?.email || firebaseUser.email || "",
+        avatar: profileData?.avatar || firebaseUser.photoURL || "",
+        role: (profileData?.role as UserRole) || UserRole.CITIZEN,
+        points: profileData?.points || 0,
+        experience: profileData?.experience || 0,
+        inventory: profileData?.inventory || [],
+        equippedFrame: profileData?.equippedFrame || null,
+        equippedBackground: profileData?.equippedBackground || null,
+        profileTag: profileData?.profileTag || null,
+        premium: profileData?.premium || false,
+      };
+
+      handleLogin(loginUser);
+
+      // Save/update profile in MongoDB
+      apiSaveUser(loginUser).catch(err => console.error('Error guardando perfil Facebook en MongoDB:', err));
     } catch (error) {
       console.error("Error al iniciar sesión con Facebook:", error);
-      alert(`Error al iniciar sesión con Facebook: ${error.message}`);
+      alert(`Error al iniciar sesión con Facebook: ${(error as any).message}`);
     }
   };
 
@@ -849,8 +884,8 @@ const App = () => {
 
       {/* Auth Modal */}
       {isAuthModalOpen && (
-        <AuthScreen 
-          onLogin={handleLogin} 
+        <AuthScreen
+          onLogin={handleLogin}
           onClose={() => setAuthModalOpen(false)}
           additionalButtons={
             <button
