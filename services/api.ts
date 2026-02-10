@@ -111,3 +111,48 @@ export async function apiUpdateReport(id: string, data: Partial<Issue>): Promise
         throw err;
     }
 }
+
+/** Delete a report */
+export async function apiDeleteReport(id: string): Promise<void> {
+    try {
+        const res = await fetch(`${API_BASE}/reports/${encodeURIComponent(id)}`, {
+            method: 'DELETE',
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    } catch (err) {
+        console.error('apiDeleteReport error:', err);
+        throw err;
+    }
+}
+
+/** Get a single report by ID */
+export async function apiGetReport(id: string): Promise<Issue | null> {
+    try {
+        const res = await fetch(`${API_BASE}/reports/${encodeURIComponent(id)}`);
+        if (res.status === 404) return null;
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+    } catch (err) {
+        console.error('apiGetReport error:', err);
+        return null;
+    }
+}
+
+/** Register a new user with email and password */
+export async function apiRegisterUser(email: string, password: string, name?: string): Promise<User | null> {
+    try {
+        const res = await fetch(`${API_BASE}/users/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password, name }),
+        });
+        if (res.status === 409) {
+            throw new Error('Ya existe un usuario con ese email');
+        }
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+    } catch (err) {
+        console.error('apiRegisterUser error:', err);
+        throw err;
+    }
+}
