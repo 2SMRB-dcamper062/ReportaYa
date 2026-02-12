@@ -1,152 +1,135 @@
 /**
- * api.ts — Frontend service to communicate with the Express/MongoDB backend
- * All Firestore operations are replaced by these REST calls.
+ * api.ts — Frontend service using localStorage for persistence.
+ * "Eliminates the API" by handling all data operations client-side.
  */
 
-import { User, Issue } from '../types';
+import { User, Issue, UserRole } from '../types';
+import { MOCK_ISSUES } from '../constants';
 
-const API_BASE = '/api';
+const USERS_KEY = 'reportaya_users';
+const REPORTS_KEY = 'reportaya_reports';
+const SESSION_KEY = 'currentUser';
+
+// Helper to get items from localStorage
+function getLocal<T>(key: string, defaultValue: T): T {
+    const stored = localStorage.getItem(key);
+    if (!stored) return defaultValue;
+    try {
+        return JSON.parse(stored);
+    } catch (e) {
+        return defaultValue;
+    }
+}
+
+// Helper to save items to localStorage
+function setLocal<T>(key: string, value: T): void {
+    localStorage.setItem(key, JSON.stringify(value));
+}
 
 // ─── USER OPERATIONS ──────────────────────────────────────────────
 
 /** Get user profile by ID */
 export async function apiGetUser(id: string): Promise<User | null> {
-    try {
-        const res = await fetch(`${API_BASE}/users/${encodeURIComponent(id)}`);
-        if (res.status === 404) return null;
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return await res.json();
-    } catch (err) {
-        console.error('apiGetUser error:', err);
-        return null;
-    }
+    const users = getLocal<User[]>(USERS_KEY, []);
+    return users.find(u => u.id === id) || null;
 }
 
 /** Get user profile by email */
 export async function apiGetUserByEmail(email: string): Promise<User | null> {
-    try {
-        const res = await fetch(`${API_BASE}/users/by-email/${encodeURIComponent(email)}`);
-        if (res.status === 404) return null;
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return await res.json();
-    } catch (err) {
-        console.error('apiGetUserByEmail error:', err);
-        return null;
-    }
+    const users = getLocal<User[]>(USERS_KEY, []);
+    return users.find(u => u.email === email) || null;
 }
 
 /** Create or update user profile */
 export async function apiSaveUser(user: User): Promise<void> {
-    try {
-        const userId = user.id || user.email || 'unknown';
-        const res = await fetch(`${API_BASE}/users/${encodeURIComponent(userId)}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(user),
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    } catch (err) {
-        console.error('apiSaveUser error:', err);
-        throw err;
+    const users = getLocal<User[]>(USERS_KEY, []);
+    const index = users.findIndex(u => u.id === user.id);
+    if (index > -1) {
+        users[index] = { ...users[index], ...user };
+    } else {
+        users.push(user);
+    }
+    setLocal(USERS_KEY, users);
+
+    // Update session if it's the current user
+    const current = getStoredUser();
+    if (current && current.id === user.id) {
+        setLocal(SESSION_KEY, { ...current, ...user });
     }
 }
 
-/** Login with email and password (local auth via MongoDB) */
+/** Login with email and password */
 export async function apiLoginLocal(email: string, password: string): Promise<User> {
-    const res = await fetch(`${API_BASE}/users/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-    });
+    const users = getLocal<User[]>(USERS_KEY, []);
+    const user = users.find(u => u.email === email && u.password === password);
 
-    if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP ${res.status}`);
+    if (!user) {
+        throw new Error('Credenciales inválidas');
     }
 
-    const user = await res.json();
-    localStorage.setItem('currentUser', JSON.stringify(user));
-    return user;
+    const { password: _, ...safeUser } = user;
+    setLocal(SESSION_KEY, safeUser);
+    return safeUser as User;
 }
 
-/** Register a new user with email and password */
+/** Register a new user */
 export async function apiRegisterLocal(email: string, password: string, name?: string): Promise<User> {
-    const res = await fetch(`${API_BASE}/users/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, name }),
-    });
-
-    if (res.status === 409) {
+    const users = getLocal<User[]>(USERS_KEY, []);
+    if (users.some(u => u.email === email)) {
         throw new Error('Ya existe un usuario con ese email');
     }
 
-    if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP ${res.status}`);
-    }
+    const newUser: User = {
+        id: `local-${Date.now()}`,
+        email,
+        password,
+        name: name || email.split('@')[0],
+        role: UserRole.CITIZEN,
+        points: 0,
+        experience: 0,
+        inventory: [],
+        premium: false
+    };
 
-    const user = await res.json();
-    localStorage.setItem('currentUser', JSON.stringify(user));
-    return user;
+    users.push(newUser);
+    setLocal(USERS_KEY, users);
+
+    const { password: _, ...safeUser } = newUser;
+    setLocal(SESSION_KEY, safeUser);
+    return safeUser as User;
 }
 
-/** Logout and clear session */
+/** Logout */
 export function apiLogoutLocal(): void {
-    localStorage.removeItem('currentUser');
+    localStorage.removeItem(SESSION_KEY);
 }
 
-/** Get user from sessionStorage */
+/** Get current session user */
 export function getStoredUser(): User | null {
-    const stored = localStorage.getItem('currentUser');
-    if (!stored) return null;
-    try {
-        return JSON.parse(stored);
-    } catch (e) {
-        return null;
-    }
+    return getLocal<User | null>(SESSION_KEY, null);
 }
 
 // ─── REPORT OPERATIONS ──────────────────────────────────────────
 
 /** Get all reports */
 export async function apiGetReports(): Promise<Issue[]> {
-    try {
-        const res = await fetch(`${API_BASE}/reports`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return await res.json();
-    } catch (err) {
-        console.error('apiGetReports error:', err);
-        return [];
-    }
+    const reports = getLocal<Issue[]>(REPORTS_KEY, MOCK_ISSUES);
+    return reports;
 }
 
 /** Save a new report */
 export async function apiSaveReport(report: Issue): Promise<void> {
-    try {
-        const res = await fetch(`${API_BASE}/reports`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(report),
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    } catch (err) {
-        console.error('apiSaveReport error:', err);
-        throw err;
-    }
+    const reports = getLocal<Issue[]>(REPORTS_KEY, MOCK_ISSUES);
+    reports.unshift(report); // Add to beginning
+    setLocal(REPORTS_KEY, reports);
 }
 
 /** Update an existing report */
 export async function apiUpdateReport(report: Issue): Promise<void> {
-    try {
-        const res = await fetch(`${API_BASE}/reports/${encodeURIComponent(report.id)}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(report),
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    } catch (err) {
-        console.error('apiUpdateReport error:', err);
-        throw err;
+    const reports = getLocal<Issue[]>(REPORTS_KEY, MOCK_ISSUES);
+    const index = reports.findIndex(r => r.id === report.id);
+    if (index > -1) {
+        reports[index] = { ...reports[index], ...report };
+        setLocal(REPORTS_KEY, reports);
     }
 }
