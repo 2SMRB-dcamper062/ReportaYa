@@ -202,10 +202,7 @@ app.post('/api/users/register', async (req, res) => {
     res.status(500).json({ error: 'Error interno del servidor', details: err.message });
   }
 });
-console.error('Error POST /api/users/register', err);
-res.status(500).json({ error: 'Error interno del servidor' });
-  }
-});
+
 
 // POST /api/users/login — Local login (email + password)
 app.post('/api/users/login', async (req, res) => {

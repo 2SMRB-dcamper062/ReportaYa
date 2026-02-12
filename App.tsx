@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import type { FC, FormEvent } from 'react';
+import type { FC } from 'react';
 import { UserRole, Issue, IssueStatus, IssueCategory, User, ShopItem } from './types';
 import { MOCK_ISSUES, MOCK_USER, SEVILLA_CENTER, PREMIUM_COST_POINTS, SHOP_ITEMS, ALL_SHOP_ITEMS, EXCLUSIVE_BADGES } from './constants';
 import IssueMap from './components/IssueMap';
