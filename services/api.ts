@@ -6,97 +6,92 @@
 import { User, Issue, UserRole } from '../types';
 import { MOCK_ISSUES } from '../constants';
 
-const USERS_KEY = 'reportaya_users';
-const REPORTS_KEY = 'reportaya_reports';
+// --- API CONFIGURATION ---
+const API_BASE_URL = 'http://localhost:3001/api';
 const SESSION_KEY = 'currentUser';
 
-// Helper to get items from localStorage
-function getLocal<T>(key: string, defaultValue: T): T {
-    const stored = localStorage.getItem(key);
-    if (!stored) return defaultValue;
-    try {
-        return JSON.parse(stored);
-    } catch (e) {
-        return defaultValue;
-    }
-}
+// Helper for API calls
+async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        ...options,
+        headers: {
+            'Content-Type': 'application/json',
+            ...options.headers,
+        },
+    });
 
-// Helper to save items to localStorage
-function setLocal<T>(key: string, value: T): void {
-    localStorage.setItem(key, JSON.stringify(value));
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Error: ${response.status}`);
+    }
+
+    return response.json();
 }
 
 // ─── USER OPERATIONS ──────────────────────────────────────────────
 
 /** Get user profile by ID */
 export async function apiGetUser(id: string): Promise<User | null> {
-    const users = getLocal<User[]>(USERS_KEY, []);
-    return users.find(u => u.id === id) || null;
+    try {
+        return await apiFetch<User>(`/users/${id}`);
+    } catch (e) {
+        return null;
+    }
 }
 
 /** Get user profile by email */
 export async function apiGetUserByEmail(email: string): Promise<User | null> {
-    const users = getLocal<User[]>(USERS_KEY, []);
-    return users.find(u => u.email === email) || null;
+    try {
+        return await apiFetch<User>(`/users/by-email/${encodeURIComponent(email)}`);
+    } catch (e) {
+        return null;
+    }
 }
 
 /** Create or update user profile */
 export async function apiSaveUser(user: User): Promise<void> {
-    const users = getLocal<User[]>(USERS_KEY, []);
-    const index = users.findIndex(u => u.id === user.id);
-    if (index > -1) {
-        users[index] = { ...users[index], ...user };
-    } else {
-        users.push(user);
-    }
-    setLocal(USERS_KEY, users);
+    await apiFetch(`/users/${user.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(user),
+    });
 
     // Update session if it's the current user
     const current = getStoredUser();
     if (current && current.id === user.id) {
-        setLocal(SESSION_KEY, { ...current, ...user });
+        const updated = { ...current, ...user };
+        localStorage.setItem(SESSION_KEY, JSON.stringify(updated));
     }
 }
 
 /** Login with email and password */
 export async function apiLoginLocal(email: string, password: string): Promise<User> {
-    const users = getLocal<User[]>(USERS_KEY, []);
-    const user = users.find(u => u.email === email && u.password === password);
+    const user = await apiFetch<User>('/users/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+    });
 
-    if (!user) {
-        throw new Error('Credenciales inválidas');
-    }
-
-    const { password: _, ...safeUser } = user;
-    setLocal(SESSION_KEY, safeUser);
-    return safeUser as User;
+    localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+    return user;
 }
 
 /** Register a new user */
 export async function apiRegisterLocal(email: string, password: string, name?: string): Promise<User> {
-    const users = getLocal<User[]>(USERS_KEY, []);
-    if (users.some(u => u.email === email)) {
-        throw new Error('Ya existe un usuario con ese email');
+    const user = await apiFetch<User>('/users/register', {
+        method: 'POST',
+        body: JSON.stringify({ email, password, name }),
+    });
+
+    // Automatically login after register (if the backend returns the user profile)
+    // The backend register currently returns { id, name, email }, but we might need 
+    // a full login to get the complete profile or just treat this as the session.
+    // For now, let's just store what we have or fetch the full profile.
+    const fullUser = await apiGetUser(user.id);
+    if (fullUser) {
+        localStorage.setItem(SESSION_KEY, JSON.stringify(fullUser));
+        return fullUser;
     }
 
-    const newUser: User = {
-        id: `local-${Date.now()}`,
-        email,
-        password,
-        name: name || email.split('@')[0],
-        role: UserRole.CITIZEN,
-        points: 0,
-        experience: 0,
-        inventory: [],
-        premium: false
-    };
-
-    users.push(newUser);
-    setLocal(USERS_KEY, users);
-
-    const { password: _, ...safeUser } = newUser;
-    setLocal(SESSION_KEY, safeUser);
-    return safeUser as User;
+    return user as User;
 }
 
 /** Logout */
@@ -106,30 +101,35 @@ export function apiLogoutLocal(): void {
 
 /** Get current session user */
 export function getStoredUser(): User | null {
-    return getLocal<User | null>(SESSION_KEY, null);
+    const stored = localStorage.getItem(SESSION_KEY);
+    if (!stored) return null;
+    try {
+        return JSON.parse(stored);
+    } catch (e) {
+        return null;
+    }
 }
 
 // ─── REPORT OPERATIONS ──────────────────────────────────────────
 
 /** Get all reports */
 export async function apiGetReports(): Promise<Issue[]> {
-    const reports = getLocal<Issue[]>(REPORTS_KEY, MOCK_ISSUES);
-    return reports;
+    return await apiFetch<Issue[]>('/reports');
 }
 
 /** Save a new report */
 export async function apiSaveReport(report: Issue): Promise<void> {
-    const reports = getLocal<Issue[]>(REPORTS_KEY, MOCK_ISSUES);
-    reports.unshift(report); // Add to beginning
-    setLocal(REPORTS_KEY, reports);
+    await apiFetch('/reports', {
+        method: 'POST',
+        body: JSON.stringify(report),
+    });
 }
 
 /** Update an existing report */
 export async function apiUpdateReport(report: Issue): Promise<void> {
-    const reports = getLocal<Issue[]>(REPORTS_KEY, MOCK_ISSUES);
-    const index = reports.findIndex(r => r.id === report.id);
-    if (index > -1) {
-        reports[index] = { ...reports[index], ...report };
-        setLocal(REPORTS_KEY, reports);
-    }
+    await apiFetch(`/reports/${report.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(report),
+    });
 }
+
