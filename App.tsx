@@ -11,23 +11,19 @@ import IssueDetailModal from './components/IssueDetailModal';
 import { analyzeReportText, validateIssueEvidence } from './services/geminiService';
 import {
   MapPin,
-  List,
-  PlusCircle,
+  Map,
+  Plus,
   User as UserIcon,
   LogOut,
-  BarChart2,
+  Zap,
   Filter,
   CheckCircle,
-  AlertCircle,
+  Map as AlertCircle,
   Clock,
   Search,
-  Wand2,
+  Zap as Sparkles,
   Camera,
-  Map as MapIcon,
-  Home,
   ShoppingBag,
-  Zap,
-  Sparkles,
   Crown
 } from 'lucide-react';
 import {
@@ -80,7 +76,7 @@ const Header = ({ user, activeTab, setActiveTab, onLogout, onLoginClick }: any) 
             className={`p-2.5 rounded-full transition-all duration-200 ${activeTab === 'home' ? 'bg-secondary text-primary shadow-md' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}
             title="Inicio"
           >
-            <Home size={18} />
+            <Map size={18} />
           </button>
 
           <button
@@ -101,7 +97,7 @@ const Header = ({ user, activeTab, setActiveTab, onLogout, onLoginClick }: any) 
               className={`p-2.5 rounded-full transition-all duration-200 ${activeTab === 'create' ? 'bg-secondary text-primary shadow-md' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}
               title="Crear Reporte"
             >
-              <PlusCircle size={18} />
+              <Plus size={18} />
             </button>
           )}
 
@@ -112,7 +108,7 @@ const Header = ({ user, activeTab, setActiveTab, onLogout, onLoginClick }: any) 
               className={`p-2.5 rounded-full transition-all duration-200 ${activeTab === 'admin' ? 'bg-secondary text-primary shadow-md' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}
               title="Panel Admin"
             >
-              <BarChart2 size={18} />
+              <Zap size={18} />
             </button>
           )}
 
@@ -199,7 +195,7 @@ const Header = ({ user, activeTab, setActiveTab, onLogout, onLoginClick }: any) 
 const ReportForm = ({ onSubmit, onCancel }: { onSubmit: (data: Partial<Issue>) => void, onCancel: () => void }) => {
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
-  const [category, setCategory] = useState<IssueCategory>(IssueCategory.OTHER);
+  const [category, setCategory] = useState(IssueCategory.OTHER);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [location, setLocation] = useState<{ lat: number, lng: number } | null>(null);
   const [locating, setLocating] = useState(false);
@@ -700,7 +696,7 @@ const App = () => {
 
       // Load Stripe.js dynamically
       const { loadStripe } = await import('@stripe/stripe-js');
-      const stripe = await loadStripe(process.env.VITE_STRIPE_PUBLISHABLE_KEY || (window as any).STRIPE_PUBLISHABLE_KEY);
+      const stripe = await loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || (window as any).STRIPE_PUBLISHABLE_KEY || '');
       if (!stripe) throw new Error('Stripe failed to load');
       const result = await stripe.redirectToCheckout({ sessionId: data.id });
       if ((result as any).error) {

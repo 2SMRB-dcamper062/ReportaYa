@@ -107,3 +107,46 @@ export function getStoredUser(): User | null {
     }
 }
 
+// ─── REPORT OPERATIONS ──────────────────────────────────────────
+
+/** Get all reports */
+export async function apiGetReports(): Promise<Issue[]> {
+    try {
+        const res = await fetch(`${API_BASE}/reports`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+    } catch (err) {
+        console.error('apiGetReports error:', err);
+        return [];
+    }
+}
+
+/** Save a new report */
+export async function apiSaveReport(report: Issue): Promise<void> {
+    try {
+        const res = await fetch(`${API_BASE}/reports`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(report),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    } catch (err) {
+        console.error('apiSaveReport error:', err);
+        throw err;
+    }
+}
+
+/** Update an existing report */
+export async function apiUpdateReport(report: Issue): Promise<void> {
+    try {
+        const res = await fetch(`${API_BASE}/reports/${encodeURIComponent(report.id)}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(report),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    } catch (err) {
+        console.error('apiUpdateReport error:', err);
+        throw err;
+    }
+}
