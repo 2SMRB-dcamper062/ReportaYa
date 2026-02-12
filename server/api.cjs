@@ -23,6 +23,15 @@ const cors = require('cors');
 const { MongoClient, ObjectId } = require('mongodb');
 const path = require('path');
 
+// Safe require for bcryptjs
+let bcrypt;
+try {
+  bcrypt = require('bcryptjs');
+} catch (e) {
+  bcrypt = null;
+  console.warn('⚠️ bcryptjs no está instalado. Registro y Login local fallarán.');
+}
+
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017';
 const DB_NAME = process.env.DB_NAME || 'reportaya';
 const PORT = process.env.API_PORT || 3001;
@@ -161,13 +170,7 @@ app.post('/api/users/register', async (req, res) => {
       return res.status(409).json({ error: 'Ya existe un usuario con ese email' });
     }
 
-    // Hash password
-    let bcrypt;
-    try {
-      bcrypt = require('bcryptjs');
-    } catch (e) {
-      bcrypt = null;
-    }
+
 
     const userId = `local-${Date.now()}`;
     const userProfile = {
@@ -188,18 +191,19 @@ app.post('/api/users/register', async (req, res) => {
     if (bcrypt) {
       userProfile.passwordHash = await bcrypt.hash(password, 10);
     } else {
-      console.error('❌ Error: bcryptjs no está disponible. No se puede registrar usuario de forma segura.');
-      return res.status(500).json({ error: 'El sistema de seguridad no está disponible actualmente.' });
+      console.error('❌ Error: bcryptjs no está disponible.');
+      return res.status(503).json({ error: 'El sistema de seguridad no está disponible. Por favor ejecute npm install.' });
     }
 
     await db.collection('users').insertOne(userProfile);
-
-    // Sanitize output
-    const { passwordHash, plainPassword, _id, ...safeUser } = userProfile;
-    res.status(201).json(safeUser);
+    res.status(201).json({ id: userProfile.id, name: userProfile.name, email: userProfile.email });
   } catch (err) {
     console.error('Error POST /api/users/register', err);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    res.status(500).json({ error: 'Error interno del servidor', details: err.message });
+  }
+});
+console.error('Error POST /api/users/register', err);
+res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 

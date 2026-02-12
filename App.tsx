@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import type { FC, FormEvent } from 'react';
 import { UserRole, Issue, IssueStatus, IssueCategory, User, ShopItem } from './types';
 import { MOCK_ISSUES, MOCK_USER, SEVILLA_CENTER, PREMIUM_COST_POINTS, SHOP_ITEMS, ALL_SHOP_ITEMS, EXCLUSIVE_BADGES } from './constants';
 import IssueMap from './components/IssueMap';
@@ -484,7 +485,12 @@ const ReportForm = ({ onSubmit, onCancel }: { onSubmit: (data: Partial<Issue>) =
   );
 };
 
-const IssueCard: React.FC<any> = ({ issue, onClick, isAdmin, onStatusChange }) => {
+const IssueCard: FC<{
+  issue: Issue;
+  onClick: () => void;
+  isAdmin?: boolean;
+  onStatusChange?: (id: string, s: IssueStatus) => void;
+}> = ({ issue, onClick, isAdmin, onStatusChange }) => {
   const getStatusColor = (s: IssueStatus) => {
     switch (s) {
       case IssueStatus.RESOLVED: return 'bg-teal-100 text-teal-800 border-teal-200';
