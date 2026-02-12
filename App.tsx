@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { UserRole, Issue, IssueStatus, IssueCategory, User, ShopItem } from './types';
 import { MOCK_ISSUES, MOCK_USER, SEVILLA_CENTER, PREMIUM_COST_POINTS, SHOP_ITEMS, ALL_SHOP_ITEMS, EXCLUSIVE_BADGES } from './constants';
 import IssueMap from './components/IssueMap';
@@ -18,13 +18,12 @@ import {
   Zap,
   Filter,
   CheckCircle,
-  Map as AlertCircle,
   Clock,
   Search,
-  Zap as Sparkles,
   Camera,
   ShoppingBag,
-  Crown
+  Crown,
+  Info
 } from 'lucide-react';
 import {
   apiSaveUser,
@@ -48,10 +47,10 @@ const Header = ({ user, activeTab, setActiveTab, onLogout, onLoginClick }: any) 
   const devItem = ALL_SHOP_ITEMS.find(i => i.id === 'tag_developer') || EXCLUSIVE_BADGES.find(i => i.id === 'tag_developer');
   const hasDev = (user?.inventory || []).includes('tag_developer');
 
-  const prevLevelRef = React.useRef(level);
-  const [showLevelUp, setShowLevelUp] = React.useState(false);
+  const prevLevelRef = useRef(level);
+  const [showLevelUp, setShowLevelUp] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const curr = Math.floor((user?.experience || 0) / 100) + 1;
     if (curr > prevLevelRef.current) {
       setShowLevelUp(true);
@@ -145,11 +144,9 @@ const Header = ({ user, activeTab, setActiveTab, onLogout, onLoginClick }: any) 
 
                   {/* Online Dot */}
                   <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-400 rounded-full border-2 border-primary"></div>
-                  {showLevelUp && (
-                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center text-white shadow-lg animate-bounce z-50">
-                      <Zap size={14} />
-                    </div>
-                  )}
+                  <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center text-white shadow-lg animate-bounce z-50">
+                    <Zap size={14} />
+                  </div>
                   {user.premium && (
                     <div className="absolute -top-2 left-8 w-6 h-6 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 shadow-md z-40">
                       <Crown size={12} />
@@ -201,7 +198,7 @@ const ReportForm = ({ onSubmit, onCancel }: { onSubmit: (data: Partial<Issue>) =
   const [locating, setLocating] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
-  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [evidenceStatus, setEvidenceStatus] = useState<'idle' | 'validating' | 'valid' | 'invalid'>('idle');
   const [evidenceConfidence, setEvidenceConfidence] = useState<number | null>(null);
   const [evidenceReason, setEvidenceReason] = useState<string | null>(null);
@@ -245,7 +242,7 @@ const ReportForm = ({ onSubmit, onCancel }: { onSubmit: (data: Partial<Issue>) =
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: any) => {
     e.preventDefault();
     onSubmit({
       title,
@@ -291,13 +288,6 @@ const ReportForm = ({ onSubmit, onCancel }: { onSubmit: (data: Partial<Issue>) =
 
   return (
     <div className="max-w-2xl mx-auto bg-white p-8 rounded-3xl shadow-xl mt-6 border border-gray-100 animate-fade-in">
-      <h2 className="text-2xl font-black text-slate-800 mb-6 flex items-center gap-3 pb-4 border-b">
-        <div className="bg-primary/10 p-3 rounded-xl text-primary">
-          <PlusCircle size={24} />
-        </div>
-        Nuevo Reporte
-      </h2>
-
       <form onSubmit={handleSubmit} className="space-y-6">
 
         <div>
@@ -309,9 +299,6 @@ const ReportForm = ({ onSubmit, onCancel }: { onSubmit: (data: Partial<Issue>) =
             tabIndex={0}
             className="border-2 border-dashed border-gray-300 rounded-2xl p-8 flex flex-col items-center justify-center text-gray-500 hover:bg-gray-50 hover:border-primary transition cursor-pointer group"
           >
-            <div className="bg-gray-100 p-4 rounded-full mb-3 group-hover:bg-primary/10 group-hover:text-primary transition">
-              <Camera size={32} />
-            </div>
             {previewUrl ? (
               <div className="w-full max-w-md">
                 <img src={previewUrl} alt="preview" className="w-full h-48 object-cover rounded-md mb-3" />
@@ -401,7 +388,7 @@ const ReportForm = ({ onSubmit, onCancel }: { onSubmit: (data: Partial<Issue>) =
               disabled={!desc || isAnalyzing}
               className="absolute bottom-3 right-3 flex items-center gap-1.5 text-xs bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-lg font-bold hover:bg-indigo-100 transition disabled:opacity-50"
             >
-              <Wand2 size={14} />
+              <Zap size={14} />
               {isAnalyzing ? 'Analizando...' : 'IA Auto-completar'}
             </button>
           </div>
@@ -468,12 +455,14 @@ const ReportForm = ({ onSubmit, onCancel }: { onSubmit: (data: Partial<Issue>) =
           </button>
         </div>
 
-        {location && (
-          <div className="mt-4">
-            <p className="text-sm text-gray-600">Ubicación seleccionada:</p>
-            <p className="text-sm font-bold text-gray-800">Latitud: {location.lat}, Longitud: {location.lng}</p>
-          </div>
-        )}
+        {
+          location && (
+            <div className="mt-4">
+              <p className="text-sm text-gray-600">Ubicación seleccionada:</p>
+              <p className="text-sm font-bold text-gray-800">Latitud: {location.lat}, Longitud: {location.lng}</p>
+            </div>
+          )
+        }
 
         <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-gray-100">
           <button
@@ -490,17 +479,12 @@ const ReportForm = ({ onSubmit, onCancel }: { onSubmit: (data: Partial<Issue>) =
             Enviar Reporte
           </button>
         </div>
-      </form>
-    </div>
+      </form >
+    </div >
   );
 };
 
-const IssueCard: React.FC<{
-  issue: Issue;
-  onClick: () => void;
-  isAdmin?: boolean;
-  onStatusChange?: (id: string, s: IssueStatus) => void;
-}> = ({ issue, onClick, isAdmin, onStatusChange }) => {
+const IssueCard: React.FC<any> = ({ issue, onClick, isAdmin, onStatusChange }) => {
   const getStatusColor = (s: IssueStatus) => {
     switch (s) {
       case IssueStatus.RESOLVED: return 'bg-teal-100 text-teal-800 border-teal-200';
@@ -513,7 +497,7 @@ const IssueCard: React.FC<{
     switch (s) {
       case IssueStatus.RESOLVED: return <CheckCircle size={14} />;
       case IssueStatus.IN_PROGRESS: return <Clock size={14} />;
-      default: return <AlertCircle size={14} />;
+      default: return <Info size={14} />;
     }
   }
 
@@ -938,7 +922,7 @@ const App = () => {
         {activeTab === 'admin' && user?.role !== UserRole.ADMIN && (
           <div className="flex flex-col items-center justify-center h-[60vh] text-gray-400">
             <div className="bg-gray-100 p-6 rounded-full mb-4">
-              <AlertCircle size={48} className="text-gray-300" />
+              <Info size={48} className="text-gray-300" />
             </div>
             <h3 className="text-2xl font-black text-gray-700">Acceso Restringido</h3>
             <p>Solo personal autorizado del Ayuntamiento.</p>

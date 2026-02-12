@@ -51,11 +51,21 @@ app.use(express.json({ limit: '10mb' })); // Reduced limit for security
 app.use(express.static(path.join(__dirname, '../dist')));
 
 let db;
+let dbClient;
+
+// --- DB MIDDLEWARE (Ensure connection) ---
+app.use((req, res, next) => {
+  if (!db && !req.path.startsWith('/api/health')) {
+    return res.status(503).json({ error: 'La base de datos no está lista. Por favor, asegúrese de que MongoDB esté corriendo.' });
+  }
+  next();
+});
 
 // ─── Connect to MongoDB ───────────────────────────────────────────
 async function connectDB() {
-  const client = new MongoClient(MONGO_URI);
+  const client = new MongoClient(MONGO_URI, { connectTimeoutMS: 5000 });
   await client.connect();
+  dbClient = client;
   db = client.db(DB_NAME);
   console.log(`✅ Conectado a MongoDB → ${MONGO_URI}/${DB_NAME}`);
 
@@ -297,8 +307,8 @@ app.put('/api/reports/:id', async (req, res) => {
     );
     res.json({ ok: true });
   } catch (err) {
-    console.error('Error PUT /api/reports/:id', err);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    console.error(`❌ Error en ${req.method} ${req.path}:`, err);
+    res.status(500).json({ error: 'Error interno del servidor', details: err.message });
   }
 });
 
