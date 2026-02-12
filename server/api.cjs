@@ -15,7 +15,6 @@
  *   PUT    /api/reports/:id            — Update report
  *   DELETE /api/reports/:id            — Delete report
  *   POST   /create-checkout-session    — Create Stripe checkout session (premium)
- *   POST   /revoke-sessions            — Revoke Firebase auth sessions
  *   GET    /api/health                 — Health check
  */
 
@@ -360,61 +359,9 @@ app.post('/create-checkout-session', async (req, res) => {
   }
 });
 
-// ─── REVOKE SESSIONS (Firebase Admin) ─────────────────────────────
+// Firebase Revoke Sessions endpoint removed. 
+// Authentication is now handled locally via MongoDB.
 
-app.post('/revoke-sessions', async (req, res) => {
-  try {
-    let admin;
-    try {
-      admin = require('firebase-admin');
-    } catch (e) {
-      return res.status(501).json({ error: 'firebase-admin no está instalado en el servidor.' });
-    }
-
-    // Initialize admin if not already
-    if (!admin.apps || !admin.apps.length) {
-      const serviceAccountPath = process.env.SERVICE_ACCOUNT_PATH;
-      const json = process.env.SERVICE_ACCOUNT_JSON;
-      if (serviceAccountPath) {
-        admin.initializeApp({ credential: admin.credential.cert(require(serviceAccountPath)) });
-      } else if (json) {
-        try {
-          const obj = JSON.parse(json);
-          admin.initializeApp({ credential: admin.credential.cert(obj) });
-        } catch (e) {
-          return res.status(500).json({ error: 'SERVICE_ACCOUNT_JSON inválido' });
-        }
-      } else {
-        return res.status(501).json({ error: 'Firebase Admin SDK no está configurado.' });
-      }
-    }
-
-    const authHeader = req.headers.authorization || '';
-    if (!authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ error: 'Missing auth header' });
-    }
-    const idToken = authHeader.split(' ')[1];
-
-    const decoded = await admin.auth().verifyIdToken(idToken);
-    const uid = req.body.uid;
-    if (!uid) return res.status(400).json({ error: 'Missing uid' });
-    if (decoded.uid !== uid) return res.status(403).json({ error: 'Forbidden' });
-
-    // Revoke refresh tokens
-    await admin.auth().revokeRefreshTokens(uid);
-
-    // Clear sessions array in MongoDB (instead of Firestore)
-    await db.collection('users').updateOne(
-      { id: uid },
-      { $set: { sessions: [] } }
-    );
-
-    res.json({ ok: true });
-  } catch (err) {
-    console.error('Error in revoke-sessions:', err);
-    res.status(500).json({ error: String(err) });
-  }
-});
 
 // ─── START SERVER ─────────────────────────────────────────────────
 connectDB()
@@ -434,7 +381,6 @@ connectDB()
       console.log(`   PUT    /api/reports/:id`);
       console.log(`   DELETE /api/reports/:id`);
       console.log(`   POST   /create-checkout-session`);
-      console.log(`   POST   /revoke-sessions`);
     });
   })
   .catch(err => {
@@ -446,8 +392,7 @@ connectDB()
 app.get('(.*)', (req, res) => {
   // If request is not an API call, serve the frontend
   if (!req.path.startsWith('/api') &&
-    !req.path.startsWith('/create-checkout-session') &&
-    !req.path.startsWith('/revoke-sessions')) {
+    !req.path.startsWith('/create-checkout-session')) {
     res.sendFile(path.join(__dirname, '../dist/index.html'), (err) => {
       if (err) {
         // Fallback or error if dist is not built

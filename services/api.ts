@@ -52,107 +52,58 @@ export async function apiSaveUser(user: User): Promise<void> {
 }
 
 /** Login with email and password (local auth via MongoDB) */
-export async function apiLoginLocal(email: string, password: string): Promise<User | null> {
-    try {
-        const res = await fetch(`${API_BASE}/users/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password }),
-        });
-        if (res.status === 401) return null;
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return await res.json();
-    } catch (err) {
-        console.error('apiLoginLocal error:', err);
-        return null;
-    }
-}
+export async function apiLoginLocal(email: string, password: string): Promise<User> {
+    const res = await fetch(`${API_BASE}/users/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+    });
 
-// ─── REPORT OPERATIONS ───────────────────────────────────────────
-
-/** Get all reports */
-export async function apiGetReports(): Promise<Issue[]> {
-    try {
-        const res = await fetch(`${API_BASE}/reports`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return await res.json();
-    } catch (err) {
-        console.error('apiGetReports error:', err);
-        return [];
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${res.status}`);
     }
-}
 
-/** Create a new report */
-export async function apiSaveReport(report: Issue): Promise<void> {
-    try {
-        const res = await fetch(`${API_BASE}/reports`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(report),
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    } catch (err) {
-        console.error('apiSaveReport error:', err);
-        throw err;
-    }
-}
-
-/** Update an existing report */
-export async function apiUpdateReport(id: string, data: Partial<Issue>): Promise<void> {
-    try {
-        const res = await fetch(`${API_BASE}/reports/${encodeURIComponent(id)}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data),
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    } catch (err) {
-        console.error('apiUpdateReport error:', err);
-        throw err;
-    }
-}
-
-/** Delete a report */
-export async function apiDeleteReport(id: string): Promise<void> {
-    try {
-        const res = await fetch(`${API_BASE}/reports/${encodeURIComponent(id)}`, {
-            method: 'DELETE',
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    } catch (err) {
-        console.error('apiDeleteReport error:', err);
-        throw err;
-    }
-}
-
-/** Get a single report by ID */
-export async function apiGetReport(id: string): Promise<Issue | null> {
-    try {
-        const res = await fetch(`${API_BASE}/reports/${encodeURIComponent(id)}`);
-        if (res.status === 404) return null;
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return await res.json();
-    } catch (err) {
-        console.error('apiGetReport error:', err);
-        return null;
-    }
+    const user = await res.json();
+    localStorage.setItem('currentUser', JSON.stringify(user));
+    return user;
 }
 
 /** Register a new user with email and password */
-export async function apiRegisterUser(email: string, password: string, name?: string): Promise<User | null> {
+export async function apiRegisterLocal(email: string, password: string, name?: string): Promise<User> {
+    const res = await fetch(`${API_BASE}/users/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, name }),
+    });
+
+    if (res.status === 409) {
+        throw new Error('Ya existe un usuario con ese email');
+    }
+
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${res.status}`);
+    }
+
+    const user = await res.json();
+    localStorage.setItem('currentUser', JSON.stringify(user));
+    return user;
+}
+
+/** Logout and clear session */
+export function apiLogoutLocal(): void {
+    localStorage.removeItem('currentUser');
+}
+
+/** Get user from sessionStorage */
+export function getStoredUser(): User | null {
+    const stored = localStorage.getItem('currentUser');
+    if (!stored) return null;
     try {
-        const res = await fetch(`${API_BASE}/users/register`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password, name }),
-        });
-        if (res.status === 409) {
-            throw new Error('Ya existe un usuario con ese email');
-        }
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return await res.json();
-    } catch (err) {
-        console.error('apiRegisterUser error:', err);
-        throw err;
+        return JSON.parse(stored);
+    } catch (e) {
+        return null;
     }
 }
+

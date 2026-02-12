@@ -30,10 +30,17 @@ import {
   Sparkles,
   Crown
 } from 'lucide-react';
-import { apiSaveUser, apiSaveReport, apiGetReports, apiGetUser, apiGetUserByEmail, apiUpdateReport } from './services/api';
+import {
+  apiSaveUser,
+  apiSaveReport,
+  apiGetReports,
+  apiGetUser,
+  apiGetUserByEmail,
+  apiUpdateReport,
+  getStoredUser,
+  apiLogoutLocal
+} from './services/api';
 import { debounce } from 'lodash';
-import { signInWithPopup } from "firebase/auth";
-import { auth, googleProvider, facebookProvider } from "./firebaseConfig";
 
 // --- Sub-components for cleaner App.tsx ---
 
@@ -555,18 +562,31 @@ const IssueCard: React.FC<{
 // --- Main App Component ---
 
 const App = () => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(getStoredUser());
   const [activeTab, setActiveTab] = useState<'home' | 'map' | 'create' | 'admin' | 'profile' | 'shop'>('home');
   const [issues, setIssues] = useState<Issue[]>([]);
 
-  // Load reports from MongoDB on mount
+  // Load reports and refresh user session from MongoDB on mount
   useEffect(() => {
+    // 1. Load reports
     apiGetReports().then(reports => {
       if (reports.length > 0) {
         setIssues(reports);
       }
     }).catch(err => console.error('Error cargando reportes desde MongoDB:', err));
+
+    // 2. Refresh user data if logged in
+    const currentUser = getStoredUser();
+    if (currentUser) {
+      apiGetUser(currentUser.id).then(fresh => {
+        if (fresh) {
+          setUser(fresh);
+          localStorage.setItem('currentUser', JSON.stringify(fresh));
+        }
+      }).catch(err => console.warn('No se pudo refrescar la sesión del servidor:', err));
+    }
   }, []);
+
   const [filterCategory, setFilterCategory] = useState<string>('All');
   const [filterStatus, setFilterStatus] = useState<string>('All');
   const [focusedIssue, setFocusedIssue] = useState<Issue | null>(null);
@@ -597,12 +617,14 @@ const App = () => {
   };
 
   const handleLogout = () => {
+    apiLogoutLocal();
     setUser(null);
     setActiveTab('home');
   };
 
   const handleUpdateUser = async (updatedUser: User) => {
     setUser(updatedUser);
+    localStorage.setItem('currentUser', JSON.stringify(updatedUser));
     await apiSaveUser(updatedUser);
   };
 
@@ -626,6 +648,7 @@ const App = () => {
       inventory: [...(user.inventory || []), item.id]
     };
     setUser(updatedUser);
+    localStorage.setItem('currentUser', JSON.stringify(updatedUser));
     // Persist profile change
     apiSaveUser(updatedUser).catch(err => console.error('Error guardando compra en tienda:', err));
   };
@@ -804,80 +827,7 @@ const App = () => {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    console.log("Iniciando sesión con Google...");
-    try {
-      const result = await signInWithPopup(auth, googleProvider);
-      console.log("Resultado del inicio de sesión:", result);
-      const firebaseUser = result.user;
-      console.log("Usuario autenticado:", firebaseUser);
-
-      // Try to load profile from MongoDB
-      let profileData = await apiGetUser(firebaseUser.uid);
-
-      const loginUser: User = {
-        id: firebaseUser.uid,
-        name: profileData?.name || firebaseUser.displayName || "Usuario",
-        email: profileData?.email || firebaseUser.email || "",
-        avatar: profileData?.avatar || firebaseUser.photoURL || "",
-        role: (profileData?.role as UserRole) || UserRole.CITIZEN,
-        points: profileData?.points || 0,
-        experience: profileData?.experience || 0,
-        inventory: profileData?.inventory || [],
-        equippedFrame: profileData?.equippedFrame || null,
-        equippedBackground: profileData?.equippedBackground || null,
-        profileTag: profileData?.profileTag || null,
-        premium: profileData?.premium || false,
-      };
-
-      handleLogin(loginUser);
-
-      // Save/update profile in MongoDB
-      apiSaveUser(loginUser).catch(err => console.error('Error guardando perfil Google en MongoDB:', err));
-
-      // Ensure the user is redirected to the map after login
-      setActiveTab('map');
-    } catch (error) {
-      console.error("Error al iniciar sesión con Google:", error);
-      alert(`Error al iniciar sesión: ${(error as any).message}`);
-    }
-  };
-
-  const handleFacebookLogin = async () => {
-    console.log("Iniciando sesión con Facebook...");
-    try {
-      const result = await signInWithPopup(auth, facebookProvider);
-      console.log("Resultado del inicio de sesión con Facebook:", result);
-      const firebaseUser = result.user;
-      console.log("Usuario autenticado con Facebook:", firebaseUser);
-
-      // Try to load profile from MongoDB
-      let profileData = await apiGetUser(firebaseUser.uid);
-
-      const loginUser: User = {
-        id: firebaseUser.uid,
-        name: profileData?.name || firebaseUser.displayName || "Usuario",
-        email: profileData?.email || firebaseUser.email || "",
-        avatar: profileData?.avatar || firebaseUser.photoURL || "",
-        role: (profileData?.role as UserRole) || UserRole.CITIZEN,
-        points: profileData?.points || 0,
-        experience: profileData?.experience || 0,
-        inventory: profileData?.inventory || [],
-        equippedFrame: profileData?.equippedFrame || null,
-        equippedBackground: profileData?.equippedBackground || null,
-        profileTag: profileData?.profileTag || null,
-        premium: profileData?.premium || false,
-      };
-
-      handleLogin(loginUser);
-
-      // Save/update profile in MongoDB
-      apiSaveUser(loginUser).catch(err => console.error('Error guardando perfil Facebook en MongoDB:', err));
-    } catch (error) {
-      console.error("Error al iniciar sesión con Facebook:", error);
-      alert(`Error al iniciar sesión con Facebook: ${(error as any).message}`);
-    }
-  };
+  // Social login handlers removed - No longer supported with MongoDB manual auth
 
   return (
     <div className="min-h-screen bg-bgLight font-sans pb-10 pt-[72px]">
@@ -887,15 +837,6 @@ const App = () => {
         <AuthScreen
           onLogin={handleLogin}
           onClose={() => setAuthModalOpen(false)}
-          additionalButtons={
-            <button
-              onClick={handleFacebookLogin}
-              className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2 rounded-full font-bold transition hover:bg-blue-700 shadow-md text-sm"
-            >
-              <img src="/facebook-logo.png" alt="Facebook Logo" className="h-5 w-5" />
-              <span>Iniciar sesión con Facebook</span>
-            </button>
-          }
         />
       )}
 
