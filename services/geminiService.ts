@@ -2,7 +2,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { IssueCategory } from '../types';
 
 // API Key handling - only initialize if API key is available
-const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.GEMINI_API_KEY;
 let ai: GoogleGenAI | null = null;
 
 try {
@@ -39,14 +39,19 @@ export const analyzeReportText = async (description: string): Promise<{ category
   }
 
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: `Analyze the following urban issue report description from Sevilla and suggest a category and a short, concise title (max 5 words).
+    const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const result = await model.generateContent({
+      contents: [{
+        role: 'user',
+        parts: [{
+          text: `Analyze the following urban issue report description from Sevilla and suggest a category and a short, concise title (max 5 words).
       
       Description: "${description}"
       
-      Available Categories: ${Object.values(IssueCategory).join(', ')}`,
-      config: {
+      Available Categories: ${Object.values(IssueCategory).join(', ')}`
+        }]
+      }],
+      generationConfig: {
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -66,8 +71,13 @@ export const analyzeReportText = async (description: string): Promise<{ category
       }
     });
 
-    if (response.text) {
-      return JSON.parse(response.text);
+    const response = await result.response;
+    const text = response.text();
+    if (text) {
+      // Find JSON block if it exists
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      const jsonStr = jsonMatch ? jsonMatch[0] : text;
+      return JSON.parse(jsonStr);
     }
 
     throw new Error("No response from AI");

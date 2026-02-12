@@ -49,17 +49,18 @@ const IssueMap: React.FC<IssueMapProps> = ({ issues, onSelectIssue, focusedIssue
     markersRef.current = [];
 
     const getStatusColor = (status: IssueStatus) => {
-        switch(status) {
-            case IssueStatus.RESOLVED: return '#48C9B0'; // Secondary/Green
-            case IssueStatus.IN_PROGRESS: return '#F59E0B'; // Amber
-            case IssueStatus.PENDING: return '#EF4444'; // Red
-            default: return '#003B73';
-        }
+      switch (status) {
+        case IssueStatus.RESOLVED: return '#48C9B0'; // Secondary/Green
+        case IssueStatus.IN_PROGRESS: return '#F59E0B'; // Amber
+        case IssueStatus.PENDING: return '#EF4444'; // Red
+        default: return '#003B73';
+      }
     }
 
     issues.forEach(issue => {
+      if (!issue.location) return;
       const color = getStatusColor(issue.status);
-      
+
       // Create a custom icon using HTML/CSS
       const customIcon = L.divIcon({
         className: 'custom-div-icon',
@@ -81,7 +82,7 @@ const IssueMap: React.FC<IssueMapProps> = ({ issues, onSelectIssue, focusedIssue
             ${issue.imageUrl ? `<div class="mt-3 rounded-md overflow-hidden h-24 w-full bg-gray-100"><img src="${issue.imageUrl}" style="width:100%; height:100%; object-fit:cover;" /></div>` : ''}
           </div>
         `);
-      
+
       // Attach issue ID to marker for easy lookup
       (marker as any).issueId = issue.id;
 
@@ -93,7 +94,7 @@ const IssueMap: React.FC<IssueMapProps> = ({ issues, onSelectIssue, focusedIssue
 
   // Handle focus changes (flyTo)
   useEffect(() => {
-    if (mapRef.current && focusedIssue) {
+    if (mapRef.current && focusedIssue && focusedIssue.location) {
       mapRef.current.flyTo([focusedIssue.location.lat, focusedIssue.location.lng], 16, {
         animate: true,
         duration: 1.5
