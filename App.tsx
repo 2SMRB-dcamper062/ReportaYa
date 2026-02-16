@@ -37,10 +37,16 @@ import {
   apiLogoutLocal
 } from './services/api';
 import { debounce } from 'lodash';
+import './i18n'; // Initialize i18n
+import { useTranslation } from 'react-i18next';
+import { ThemeProvider } from './context/ThemeContext';
+import { ThemeToggle } from './components/ThemeToggle';
+import { LanguageSelector } from './components/LanguageSelector';
 
 // --- Sub-components for cleaner App.tsx ---
 
 const Header = ({ user, activeTab, setActiveTab, onLogout, onLoginClick }: any) => {
+  const { t } = useTranslation();
   const experience = user?.experience || 0;
   const level = Math.floor(experience / 100) + 1;
   const expCurrent = Math.max(0, experience - (level - 1) * 100);
@@ -67,6 +73,7 @@ const Header = ({ user, activeTab, setActiveTab, onLogout, onLoginClick }: any) 
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
         <div className="flex items-center gap-3 hover:opacity-80 transition cursor-pointer group" onClick={() => setActiveTab('home')}>
           <img src="/logo.png" alt="Reporta Ya Logo" className="h-12 object-contain" />
+          <h1 className="hidden md:block font-bold text-xl text-white tracking-tight">{t('app.title')}</h1>
         </div>
 
         <nav className="flex items-center gap-1 md:gap-2 bg-white/5 p-1 rounded-full border border-white/10 backdrop-blur-sm">
@@ -74,7 +81,7 @@ const Header = ({ user, activeTab, setActiveTab, onLogout, onLoginClick }: any) 
           <button
             onClick={() => setActiveTab('home')}
             className={`p-2.5 rounded-full transition-all duration-200 ${activeTab === 'home' ? 'bg-secondary text-primary shadow-md' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}
-            title="Inicio"
+            title={t('app.home')}
           >
             <Map size={18} />
           </button>
@@ -82,7 +89,7 @@ const Header = ({ user, activeTab, setActiveTab, onLogout, onLoginClick }: any) 
           <button
             onClick={() => setActiveTab('map')}
             className={`p-2.5 rounded-full transition-all duration-200 ${activeTab === 'map' ? 'bg-secondary text-primary shadow-md' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}
-            title="Mapa de Incidencias"
+            title={t('app.map')}
           >
             <MapPin size={18} />
           </button>
@@ -95,7 +102,7 @@ const Header = ({ user, activeTab, setActiveTab, onLogout, onLoginClick }: any) 
                 else setActiveTab('create');
               }}
               className={`p-2.5 rounded-full transition-all duration-200 ${activeTab === 'create' ? 'bg-secondary text-primary shadow-md' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}
-              title="Crear Reporte"
+              title={t('app.create')}
             >
               <Plus size={18} />
             </button>
@@ -106,7 +113,7 @@ const Header = ({ user, activeTab, setActiveTab, onLogout, onLoginClick }: any) 
             <button
               onClick={() => setActiveTab('admin')}
               className={`p-2.5 rounded-full transition-all duration-200 ${activeTab === 'admin' ? 'bg-secondary text-primary shadow-md' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}
-              title="Panel Admin"
+              title={t('app.admin')}
             >
               <Zap size={18} />
             </button>
@@ -117,7 +124,7 @@ const Header = ({ user, activeTab, setActiveTab, onLogout, onLoginClick }: any) 
             <button
               onClick={() => setActiveTab('shop')}
               className={`p-2.5 rounded-full transition-all duration-200 ${activeTab === 'shop' ? 'bg-secondary text-primary shadow-md' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}
-              title="Tienda de Puntos"
+              title={t('app.shop')}
             >
               <ShoppingBag size={18} />
             </button>
@@ -125,6 +132,9 @@ const Header = ({ user, activeTab, setActiveTab, onLogout, onLoginClick }: any) 
         </nav>
 
         <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <LanguageSelector />
+          <div className="w-px h-6 bg-white/10 mx-1"></div>
           {user ? (
             <>
               <button
@@ -172,7 +182,7 @@ const Header = ({ user, activeTab, setActiveTab, onLogout, onLoginClick }: any) 
                   )}
                 </div>
               </button>
-              <button onClick={onLogout} className="p-2.5 hover:bg-red-500/20 text-white/60 hover:text-red-400 rounded-full transition" title="Cerrar Sesión">
+              <button onClick={onLogout} className="p-2.5 hover:bg-red-500/20 text-white/60 hover:text-red-400 rounded-full transition" title={t('app.logout')}>
                 <LogOut size={18} />
               </button>
             </>
@@ -181,7 +191,7 @@ const Header = ({ user, activeTab, setActiveTab, onLogout, onLoginClick }: any) 
               onClick={onLoginClick}
               className="flex items-center gap-2 bg-white text-primary px-5 py-2 rounded-full font-bold transition hover:bg-gray-100 shadow-md text-sm"
             >
-              <span className="hidden sm:inline">Entrar</span>
+              <span className="hidden sm:inline">{t('app.login')}</span>
             </button>
           )}
         </div>
@@ -191,6 +201,7 @@ const Header = ({ user, activeTab, setActiveTab, onLogout, onLoginClick }: any) 
 };
 
 const ReportForm = ({ onSubmit, onCancel }: { onSubmit: (data: Partial<Issue>) => void, onCancel: () => void }) => {
+  const { t } = useTranslation();
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
   const [category, setCategory] = useState(IssueCategory.OTHER);
@@ -288,17 +299,17 @@ const ReportForm = ({ onSubmit, onCancel }: { onSubmit: (data: Partial<Issue>) =
   };
 
   return (
-    <div className="max-w-2xl mx-auto bg-white p-8 rounded-3xl shadow-xl mt-6 border border-gray-100 animate-fade-in">
+    <div className="max-w-2xl mx-auto bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-xl mt-6 border border-gray-100 dark:border-gray-700 animate-fade-in transition-colors">
       <form onSubmit={handleSubmit} className="space-y-6">
 
         <div>
-          <label className="block text-sm font-bold text-gray-700 mb-2">Fotografía</label>
+          <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">{t('issue.photo')}</label>
           <div
             onClick={() => fileInputRef.current?.click()}
             onKeyDown={(e) => { if (e.key === 'Enter') fileInputRef.current?.click(); }}
             role="button"
             tabIndex={0}
-            className="border-2 border-dashed border-gray-300 rounded-2xl p-8 flex flex-col items-center justify-center text-gray-500 hover:bg-gray-50 hover:border-primary transition cursor-pointer group"
+            className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl p-8 flex flex-col items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700 hover:border-primary transition cursor-pointer group"
           >
             {previewUrl ? (
               <div className="w-full max-w-md">
@@ -374,12 +385,12 @@ const ReportForm = ({ onSubmit, onCancel }: { onSubmit: (data: Partial<Issue>) =
         </div>
 
         <div>
-          <label className="block text-sm font-bold text-gray-700 mb-2">Descripción</label>
+          <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">{t('issue.description')}</label>
           <div className="relative">
             <textarea
               value={desc}
               onChange={(e) => setDesc(e.target.value)}
-              className="w-full p-4 border border-gray-300 rounded-xl focus:ring-4 focus:ring-primary/20 focus:border-primary transition h-32 outline-none resize-none"
+              className="w-full p-4 border border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-xl focus:ring-4 focus:ring-primary/20 focus:border-primary transition h-32 outline-none resize-none"
               placeholder="Describe el problema (ej. Farola rota en Alameda...)"
               required
             />
@@ -387,49 +398,49 @@ const ReportForm = ({ onSubmit, onCancel }: { onSubmit: (data: Partial<Issue>) =
               type="button"
               onClick={handleAIAnalysis}
               disabled={!desc || isAnalyzing}
-              className="absolute bottom-3 right-3 flex items-center gap-1.5 text-xs bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-lg font-bold hover:bg-indigo-100 transition disabled:opacity-50"
+              className="absolute bottom-3 right-3 flex items-center gap-1.5 text-xs bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 px-3 py-1.5 rounded-lg font-bold hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition disabled:opacity-50"
             >
               <Zap size={14} />
-              {isAnalyzing ? 'Analizando...' : 'IA Auto-completar'}
+              {isAnalyzing ? t('issue.analyzing') : t('issue.ai_autocomplete')}
             </button>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">Título</label>
+            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">{t('issue.title')}</label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-xl focus:ring-4 focus:ring-primary/20 focus:border-primary outline-none transition"
+              className="w-full p-3 border border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-xl focus:ring-4 focus:ring-primary/20 focus:border-primary outline-none transition"
               placeholder="Título breve"
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">Categoría</label>
+            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">{t('issue.category')}</label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value as IssueCategory)}
-              className="w-full p-3 border border-gray-300 rounded-xl focus:ring-4 focus:ring-primary/20 focus:border-primary outline-none transition bg-white"
+              className="w-full p-3 border border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-xl focus:ring-4 focus:ring-primary/20 focus:border-primary outline-none transition"
             >
               {Object.values(IssueCategory).map(c => (
-                <option key={c} value={c}>{c}</option>
+                <option key={c} value={c}>{t(`category.${c}`)}</option>
               ))}
             </select>
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-bold text-gray-700 mb-2">Ubicación</label>
-          <p className="text-sm text-gray-600">Introduce la calle o detecta tu ubicación:</p>
+          <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">{t('issue.location')}</label>
+          <p className="text-sm text-gray-600 dark:text-gray-400">Introduce la calle o detecta tu ubicación:</p>
           <div className="relative mt-2">
             <input
               type="text"
               value={street}
               onChange={(e) => setStreet(e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-xl focus:ring-4 focus:ring-primary/20 focus:border-primary outline-none transition"
+              className="w-full p-3 border border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-xl focus:ring-4 focus:ring-primary/20 focus:border-primary outline-none transition"
               placeholder="Escribe la calle..."
             />
             {suggestions.length > 0 && (
@@ -449,10 +460,10 @@ const ReportForm = ({ onSubmit, onCancel }: { onSubmit: (data: Partial<Issue>) =
           <button
             type="button"
             onClick={handleGeolocation}
-            className={`w-full p-4 mt-4 rounded-xl border-2 flex items-center justify-center gap-2 transition font-bold ${location ? 'bg-green-50 border-green-200 text-green-700' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'}`}
+            className={`w-full p-4 mt-4 rounded-xl border-2 flex items-center justify-center gap-2 transition font-bold ${location ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-700 dark:text-green-400' : 'bg-white dark:bg-slate-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-slate-600'}`}
           >
             <MapPin size={20} />
-            {locating ? 'Localizando...' : location ? `Ubicación detectada` : 'Detectar mi ubicación'}
+            {locating ? t('issue.locating') : location ? t('issue.location_detected') : t('issue.detect_location')}
           </button>
         </div>
 
@@ -469,15 +480,15 @@ const ReportForm = ({ onSubmit, onCancel }: { onSubmit: (data: Partial<Issue>) =
           <button
             type="button"
             onClick={onCancel}
-            className="px-6 py-3 text-gray-600 hover:bg-gray-100 rounded-xl transition font-bold"
+            className="px-6 py-3 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl transition font-bold"
           >
-            Cancelar
+            {t('issue.cancel')}
           </button>
           <button
             type="submit"
             className="px-8 py-3 bg-primary text-white rounded-xl hover:bg-blue-900 transition font-bold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
           >
-            Enviar Reporte
+            {t('issue.submit')}
           </button>
         </div>
       </form >
@@ -766,33 +777,36 @@ const App = () => {
   });
 
   // Filter Bar Component
-  const FilterBar = () => (
-    <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-6 flex flex-wrap gap-4 items-center animate-fade-in sticky top-20 z-30">
-      <div className="flex items-center gap-2 text-primary font-bold">
-        <Filter size={20} />
-        <span className="hidden sm:inline">Filtrar:</span>
+  const FilterBar = () => {
+    const { t } = useTranslation();
+    return (
+      <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 mb-6 flex flex-wrap gap-4 items-center animate-fade-in sticky top-20 z-30 transition-colors">
+        <div className="flex items-center gap-2 text-primary dark:text-secondary font-bold">
+          <Filter size={20} />
+          <span className="hidden sm:inline">{t('app.filter')}:</span>
+        </div>
+        <select
+          className="p-2 px-3 border border-gray-200 dark:border-gray-600 rounded-xl text-sm bg-gray-50 dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-primary outline-none"
+          value={filterCategory}
+          onChange={(e) => setFilterCategory(e.target.value)}
+        >
+          <option value="All">{t('app.all_categories')}</option>
+          {Object.values(IssueCategory).map(c => <option key={c} value={c}>{t(`category.${c}`)}</option>)}
+        </select>
+        <select
+          className="p-2 px-3 border border-gray-200 dark:border-gray-600 rounded-xl text-sm bg-gray-50 dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-primary outline-none"
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+        >
+          <option value="All">{t('app.all_status')}</option>
+          {Object.values(IssueStatus).map(s => <option key={s} value={s}>{t(`status.${s}`)}</option>)}
+        </select>
+        <div className="ml-auto text-sm text-gray-500 dark:text-gray-400 font-medium">
+          <strong>{filteredIssues.length}</strong> {t('app.results')}
+        </div>
       </div>
-      <select
-        className="p-2 px-3 border border-gray-200 rounded-xl text-sm bg-gray-50 focus:ring-2 focus:ring-primary outline-none"
-        value={filterCategory}
-        onChange={(e) => setFilterCategory(e.target.value)}
-      >
-        <option value="All">Todas las Categorías</option>
-        {Object.values(IssueCategory).map(c => <option key={c} value={c}>{c}</option>)}
-      </select>
-      <select
-        className="p-2 px-3 border border-gray-200 rounded-xl text-sm bg-gray-50 focus:ring-2 focus:ring-primary outline-none"
-        value={filterStatus}
-        onChange={(e) => setFilterStatus(e.target.value)}
-      >
-        <option value="All">Todos los Estados</option>
-        {Object.values(IssueStatus).map(s => <option key={s} value={s}>{s}</option>)}
-      </select>
-      <div className="ml-auto text-sm text-gray-500 font-medium">
-        <strong>{filteredIssues.length}</strong> resultados
-      </div>
-    </div>
-  );
+    );
+  };
 
   // Las funciones saveUserProfile y saveReport ahora usan la API REST de MongoDB
   const saveUserProfile = async (user: User) => {
@@ -816,126 +830,128 @@ const App = () => {
   // Social login handlers removed - No longer supported with MongoDB manual auth
 
   return (
-    <div className="min-h-screen bg-bgLight font-sans pb-10 pt-[72px]">
+    <ThemeProvider>
+      <div className="min-h-screen bg-bgLight dark:bg-slate-900 font-sans pb-10 pt-[72px] transition-colors duration-300">
 
-      {/* Auth Modal */}
-      {isAuthModalOpen && (
-        <AuthScreen
-          onLogin={handleLogin}
-          onClose={() => setAuthModalOpen(false)}
-        />
-      )}
-
-      {/* Detail Modal */}
-      {selectedIssue && (
-        <IssueDetailModal
-          issue={selectedIssue}
-          currentUser={user}
-          onClose={() => setSelectedIssue(null)}
-          onFocusLocation={(loc) => setFocusedIssue({ ...selectedIssue, location: loc })}
-          onUpdateIssue={handleIssueUpdate}
-        />
-      )}
-
-      <Header
-        user={user}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        onLogout={handleLogout}
-        onLoginClick={() => setAuthModalOpen(true)}
-      />
-
-      <main className="container mx-auto px-4 pt-6">
-
-        {activeTab === 'home' && (
-          <LandingPage onStart={() => {
-            if (user) setActiveTab('map');
-            else setAuthModalOpen(true);
-          }} />
+        {/* Auth Modal */}
+        {isAuthModalOpen && (
+          <AuthScreen
+            onLogin={handleLogin}
+            onClose={() => setAuthModalOpen(false)}
+          />
         )}
 
-        {/* Dynamic Content */}
+        {/* Detail Modal */}
+        {selectedIssue && (
+          <IssueDetailModal
+            issue={selectedIssue}
+            currentUser={user}
+            onClose={() => setSelectedIssue(null)}
+            onFocusLocation={(loc) => setFocusedIssue({ ...selectedIssue, location: loc })}
+            onUpdateIssue={handleIssueUpdate}
+          />
+        )}
 
-        {activeTab === 'map' && (
-          <div className="h-[calc(100vh-160px)] flex flex-col animate-fade-in">
-            <FilterBar />
+        <Header
+          user={user}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          onLogout={handleLogout}
+          onLoginClick={() => setAuthModalOpen(true)}
+        />
 
-            <div className="flex-1 flex flex-col md:flex-row gap-6 min-h-0">
-              {/* Sidebar List - Left side */}
-              <div className="w-full md:w-1/3 lg:w-[380px] overflow-y-auto pr-2 space-y-4 pb-4 order-2 md:order-1 custom-scrollbar">
-                {filteredIssues.map(issue => (
-                  <IssueCard
-                    key={issue.id}
-                    issue={issue}
-                    onClick={() => setSelectedIssue(issue)}
-                    isAdmin={user?.role === UserRole.ADMIN}
-                    onStatusChange={handleStatusChange}
+        <main className="container mx-auto px-4 pt-6">
+
+          {activeTab === 'home' && (
+            <LandingPage onStart={() => {
+              if (user) setActiveTab('map');
+              else setAuthModalOpen(true);
+            }} />
+          )}
+
+          {/* Dynamic Content */}
+
+          {activeTab === 'map' && (
+            <div className="h-[calc(100vh-160px)] flex flex-col animate-fade-in">
+              <FilterBar />
+
+              <div className="flex-1 flex flex-col md:flex-row gap-6 min-h-0">
+                {/* Sidebar List - Left side */}
+                <div className="w-full md:w-1/3 lg:w-[380px] overflow-y-auto pr-2 space-y-4 pb-4 order-2 md:order-1 custom-scrollbar">
+                  {filteredIssues.map(issue => (
+                    <IssueCard
+                      key={issue.id}
+                      issue={issue}
+                      onClick={() => setSelectedIssue(issue)}
+                      isAdmin={user?.role === UserRole.ADMIN}
+                      onStatusChange={handleStatusChange}
+                    />
+                  ))}
+                  {filteredIssues.length === 0 && (
+                    <div className="p-12 text-center text-gray-400 bg-white dark:bg-slate-800 rounded-3xl border-2 border-dashed border-gray-200 dark:border-gray-700 flex flex-col items-center">
+                      <Search size={40} className="mb-3 opacity-20" />
+                      <p>No hay incidencias.</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Map Container - Right side */}
+                <div className="flex-1 relative rounded-3xl overflow-hidden border-8 border-white dark:border-slate-800 shadow-xl min-h-[400px] order-1 md:order-2">
+                  <IssueMap
+                    issues={filteredIssues}
+                    onSelectIssue={(i) => setSelectedIssue(i)}
+                    focusedIssue={focusedIssue}
                   />
-                ))}
-                {filteredIssues.length === 0 && (
-                  <div className="p-12 text-center text-gray-400 bg-white rounded-3xl border-2 border-dashed border-gray-200 flex flex-col items-center">
-                    <Search size={40} className="mb-3 opacity-20" />
-                    <p>No hay incidencias.</p>
+
+                  {/* Map Overlay Legend */}
+                  <div className="absolute bottom-6 left-6 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md p-4 rounded-2xl shadow-xl text-xs space-y-2 z-[400] border border-gray-100 dark:border-gray-700 text-gray-600 dark:text-gray-300">
+                    <div className="font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Leyenda</div>
+                    <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#EF4444] shadow-sm"></div>Pendiente</div>
+                    <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#F59E0B] shadow-sm"></div>En Proceso</div>
+                    <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#48C9B0] shadow-sm"></div>Resuelto</div>
                   </div>
-                )}
-              </div>
-
-              {/* Map Container - Right side */}
-              <div className="flex-1 relative rounded-3xl overflow-hidden border-8 border-white shadow-xl min-h-[400px] order-1 md:order-2">
-                <IssueMap
-                  issues={filteredIssues}
-                  onSelectIssue={(i) => setSelectedIssue(i)}
-                  focusedIssue={focusedIssue}
-                />
-
-                {/* Map Overlay Legend */}
-                <div className="absolute bottom-6 left-6 bg-white/95 backdrop-blur-md p-4 rounded-2xl shadow-xl text-xs space-y-2 z-[400] border border-gray-100">
-                  <div className="font-bold text-gray-500 uppercase tracking-wider mb-2">Leyenda</div>
-                  <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#EF4444] shadow-sm"></div>Pendiente</div>
-                  <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#F59E0B] shadow-sm"></div>En Proceso</div>
-                  <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#48C9B0] shadow-sm"></div>Resuelto</div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {activeTab === 'create' && user?.role === UserRole.CITIZEN && (
-          <ReportForm
-            onSubmit={handleCreateIssue}
-            onCancel={() => setActiveTab('map')}
-          />
-        )}
+          {activeTab === 'create' && user?.role === UserRole.CITIZEN && (
+            <ReportForm
+              onSubmit={handleCreateIssue}
+              onCancel={() => setActiveTab('map')}
+            />
+          )}
 
-        {activeTab === 'admin' && user?.role === UserRole.ADMIN && (
-          <StatsPanel issues={issues} />
-        )}
+          {activeTab === 'admin' && user?.role === UserRole.ADMIN && (
+            <StatsPanel issues={issues} />
+          )}
 
-        {activeTab === 'profile' && user && (
-          <ProfilePanel user={user} issues={issues} onUpdateUser={handleUpdateUser} />
-        )}
+          {activeTab === 'profile' && user && (
+            <ProfilePanel user={user} issues={issues} onUpdateUser={handleUpdateUser} />
+          )}
 
-        {activeTab === 'shop' && user && (
-          <ShopPanel
-            user={user}
-            onPurchase={handleShopPurchase}
-            onEquip={handleEquipItem}
-            onBuyPremium={handleBuyPremium}
-          />
-        )}
+          {activeTab === 'shop' && user && (
+            <ShopPanel
+              user={user}
+              onPurchase={handleShopPurchase}
+              onEquip={handleEquipItem}
+              onBuyPremium={handleBuyPremium}
+            />
+          )}
 
-        {/* Access Denied / Fallback */}
-        {activeTab === 'admin' && user?.role !== UserRole.ADMIN && (
-          <div className="flex flex-col items-center justify-center h-[60vh] text-gray-400">
-            <div className="bg-gray-100 p-6 rounded-full mb-4">
-              <Info size={48} className="text-gray-300" />
+          {/* Access Denied / Fallback */}
+          {activeTab === 'admin' && user?.role !== UserRole.ADMIN && (
+            <div className="flex flex-col items-center justify-center h-[60vh] text-gray-400">
+              <div className="bg-gray-100 p-6 rounded-full mb-4">
+                <Info size={48} className="text-gray-300" />
+              </div>
+              <h3 className="text-2xl font-black text-gray-700">Acceso Restringido</h3>
+              <p>Solo personal autorizado del Ayuntamiento.</p>
             </div>
-            <h3 className="text-2xl font-black text-gray-700">Acceso Restringido</h3>
-            <p>Solo personal autorizado del Ayuntamiento.</p>
-          </div>
-        )}
-      </main>
-    </div>
+          )}
+        </main>
+      </div>
+    </ThemeProvider>
   );
 };
 

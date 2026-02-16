@@ -44,6 +44,26 @@
   </script>
   <style>
     /* Custom scrollbar for better aesthetics */
+    :root {
+      --bg-primary: #F4F6F8;
+      --text-primary: #1e293b;
+      --card-bg: #ffffff;
+      --border-color: #e2e8f0;
+    }
+
+    .dark {
+      --bg-primary: #0f172a;
+      --text-primary: #f8fafc;
+      --card-bg: #1e293b;
+      --border-color: #334155;
+    }
+
+    body {
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      transition: background-color 0.3s, color 0.3s;
+    }
+
     ::-webkit-scrollbar {
       width: 8px;
     }
@@ -52,9 +72,17 @@
       background: #f1f1f1;
     }
 
+    .dark ::-webkit-scrollbar-track {
+      background: #1e293b;
+    }
+
     ::-webkit-scrollbar-thumb {
       background: #003B73;
       border-radius: 4px;
+    }
+    
+    .dark ::-webkit-scrollbar-thumb {
+        background: #48C9B0;
     }
 
     ::-webkit-scrollbar-thumb:hover {

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { UserRole, User } from '../types';
 import { Mail, Lock, X } from 'lucide-react';
 import { MOCK_USERS } from '../constants';
@@ -10,6 +11,7 @@ interface AuthScreenProps {
 }
 
 const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onClose }) => {
+  const { t } = useTranslation();
   const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -51,40 +53,40 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
-      <div className="bg-white rounded-lg shadow-lg w-full max-w-md overflow-hidden animate-fade-in">
-        <header className="bg-blue-600 text-white p-4 flex justify-between items-center">
-          <h2 className="text-lg font-bold">{isRegister ? 'Crear Cuenta' : 'Bienvenido'}</h2>
+    <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 backdrop-blur-sm">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg w-full max-w-md overflow-hidden animate-fade-in transition-colors">
+        <header className="bg-blue-600 dark:bg-blue-900 text-white p-4 flex justify-between items-center">
+          <h2 className="text-lg font-bold">{isRegister ? t('auth.register', 'Crear Cuenta') : t('app.login', 'Bienvenido')}</h2>
           <button onClick={onClose} className="text-white hover:bg-white/10 rounded-full p-1 transition">
             <X className="w-5 h-5" />
           </button>
         </header>
 
-        <div className="p-6">
-          <div className="flex justify-center mb-6 bg-gray-100 p-1 rounded-xl">
+        <div className="p-6 text-slate-800 dark:text-white">
+          <div className="flex justify-center mb-6 bg-gray-100 dark:bg-slate-700 p-1 rounded-xl">
             <button
-              className={`flex-1 py-2 text-center rounded-lg transition-all ${!isRegister ? 'bg-white shadow-sm font-bold text-blue-600' : 'text-gray-500'}`}
+              className={`flex-1 py-2 text-center rounded-lg transition-all ${!isRegister ? 'bg-white dark:bg-slate-600 shadow-sm font-bold text-blue-600 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400'}`}
               onClick={() => { setIsRegister(false); setError(null); }}
             >
-              INICIAR SESIÓN
+              {t('auth.login_title', 'INICIAR SESIÓN')}
             </button>
             <button
-              className={`flex-1 py-2 text-center rounded-lg transition-all ${isRegister ? 'bg-white shadow-sm font-bold text-blue-600' : 'text-gray-500'}`}
+              className={`flex-1 py-2 text-center rounded-lg transition-all ${isRegister ? 'bg-white dark:bg-slate-600 shadow-sm font-bold text-blue-600 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400'}`}
               onClick={() => { setIsRegister(true); setError(null); }}
             >
-              REGISTRARSE
+              {t('auth.register', 'REGISTRARSE')}
             </button>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {isRegister && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre Completo</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('auth.full_name', 'Nombre Completo')}</label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full border rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border dark:border-gray-600 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:text-white"
                   placeholder="Tu nombre"
                   required={isRegister}
                 />
@@ -92,14 +94,14 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onClose }) => {
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('auth.email', 'Correo electrónico')}</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10 w-full border rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="pl-10 w-full border dark:border-gray-600 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:text-white"
                   placeholder="correo@ejemplo.com"
                   required
                 />
@@ -107,14 +109,14 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onClose }) => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('auth.password', 'Contraseña')}</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 w-full border rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="pl-10 w-full border dark:border-gray-600 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:text-white"
                   placeholder="••••••••"
                   required
                 />
@@ -123,14 +125,14 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onClose }) => {
 
             {isRegister && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Confirmar Contraseña</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('auth.confirm_password', 'Confirmar Contraseña')}</label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <input
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="pl-10 w-full border rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="pl-10 w-full border dark:border-gray-600 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:text-white"
                     placeholder="••••••••"
                     required={isRegister}
                   />
@@ -143,9 +145,9 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onClose }) => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 px-4 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-colors disabled:bg-blue-400 disabled:cursor-not-allowed shadow-md"
+              className="w-full py-3 px-4 bg-blue-600 dark:bg-blue-700 text-white rounded-lg font-bold hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors disabled:bg-blue-400 disabled:cursor-not-allowed shadow-md"
             >
-              {loading ? 'Cargando...' : isRegister ? 'Registrarse' : 'Entrar →'}
+              {loading ? 'Cargando...' : isRegister ? t('auth.register', 'Registrarse') : t('auth.sign_in', 'Entrar →')}
             </button>
           </form>
 
