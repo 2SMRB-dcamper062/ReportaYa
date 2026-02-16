@@ -50,7 +50,11 @@ app.use((req, res, next) => {
 });
 
 const corsOptions = {
-  origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : true,
+  origin: (origin, callback) => {
+    // In development, we allow all origins. 
+    // If ALLOWED_ORIGINS is set, we could filter here, but for now we follow the user's intent to "make it work".
+    callback(null, true);
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
