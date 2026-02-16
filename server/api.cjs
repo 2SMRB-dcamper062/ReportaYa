@@ -400,7 +400,7 @@ connectDB()
   });
 
 // ─── SERVE FRONTEND (Optional: for production) ─────────────────────
-app.get('(.*)', (req, res) => {
+app.get('{*path}', (req, res) => {
   // If request is not an API call, serve the frontend
   if (!req.path.startsWith('/api') &&
     !req.path.startsWith('/create-checkout-session')) {

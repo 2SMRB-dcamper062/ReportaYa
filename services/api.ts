@@ -126,10 +126,10 @@ export async function apiSaveReport(report: Issue): Promise<void> {
 }
 
 /** Update an existing report */
-export async function apiUpdateReport(report: Issue): Promise<void> {
-    await apiFetch(`/reports/${report.id}`, {
+export async function apiUpdateReport(id: string, data: Partial<Issue>): Promise<void> {
+    await apiFetch(`/reports/${id}`, {
         method: 'PUT',
-        body: JSON.stringify(report),
+        body: JSON.stringify(data),
     });
 }
 
