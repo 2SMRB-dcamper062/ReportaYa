@@ -50,11 +50,7 @@ app.use((req, res, next) => {
 });
 
 const corsOptions = {
-  origin: (origin, callback) => {
-    // In development, we allow all origins. 
-    // If ALLOWED_ORIGINS is set, we could filter here, but for now we follow the user's intent to "make it work".
-    callback(null, true);
-  },
+  origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : ['http://localhost:3000', 'http://localhost:3001'],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
@@ -404,7 +400,7 @@ connectDB()
   });
 
 // ─── SERVE FRONTEND (Optional: for production) ─────────────────────
-app.get('*', (req, res) => {
+app.get('{*path}', (req, res) => {
   // If request is not an API call, serve the frontend
   if (!req.path.startsWith('/api') &&
     !req.path.startsWith('/create-checkout-session')) {
