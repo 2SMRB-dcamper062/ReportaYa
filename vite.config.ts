@@ -8,7 +8,7 @@ export default defineConfig(({ mode }) => {
     server: {
       allowedHosts: true,
       port: 3000,
-      strictPort: false,
+      strictPort: true,
       host: '0.0.0.0',
 
     },
