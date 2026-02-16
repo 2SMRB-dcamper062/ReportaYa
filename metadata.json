@@ -1,8 +1,0 @@
-{
-  "name": "Reporta Ya - Sevilla",
-  "description": "Plataforma de gestión de incidencias urbanas para la ciudad de Sevilla. Conecta vecinos con el ayuntamiento para reportar y resolver problemas.",
-  "requestFramePermissions": [
-    "camera",
-    "geolocation"
-  ]
-}
