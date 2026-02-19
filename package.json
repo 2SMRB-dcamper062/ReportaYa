@@ -4,8 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "start": "concurrently -n MONGO,API,VITE -c green,cyan,magenta \"mongod\" \"node server/api.cjs\" \"vite\"",
-    "dev": "concurrently -n MONGO,API,VITE -c green,cyan,magenta \"mongod\" \"node server/api.cjs\" \"vite\"",
+    "start": "concurrently -n MONGO,API,VITE -c green,cyan,magenta \"mongod\" \"node server/api.cjs\" \"vite --host\"",
+    "dev": "concurrently -n MONGO,API,VITE -c green,cyan,magenta \"mongod\" \"node server/api.cjs\" \"vite --host\"",
     "dev:api": "node server/api.cjs",
     "dev:vite": "vite",
     "build": "vite build",
