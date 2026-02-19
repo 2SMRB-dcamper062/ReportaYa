@@ -49,8 +49,8 @@ function getInitialThemeMode(): ThemeMode {
   try {
     const stored = localStorage.getItem(THEME_STORAGE_KEY);
     if (stored === 'light' || stored === 'dark') return stored;
-    const prefersDark = typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)')?.matches;
-    return prefersDark ? 'dark' : 'light';
+    // Default to light mode
+    return 'light';
   } catch {
     return 'light';
   }
@@ -100,7 +100,7 @@ const Header = ({ user, activeTab, setActiveTab, onLogout, onLoginClick }: any) 
             className={`p-2.5 rounded-full transition-all duration-200 ${activeTab === 'map' ? 'bg-secondary text-primary shadow-md' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}
             title="Mapa de Incidencias"
           >
-          {/* (Settings moved to profile area) */}
+            {/* (Settings moved to profile area) */}
             <MapPin size={18} />
           </button>
 
@@ -466,11 +466,10 @@ const ReportForm = ({ onSubmit, onCancel }: { onSubmit: (data: Partial<Issue>) =
           <button
             type="button"
             onClick={handleGeolocation}
-            className={`w-full p-4 mt-4 rounded-xl border-2 flex items-center justify-center gap-2 transition font-bold ${
-              location
+            className={`w-full p-4 mt-4 rounded-xl border-2 flex items-center justify-center gap-2 transition font-bold ${location
                 ? 'bg-green-50 border-green-200 text-green-700 dark:bg-emerald-950/25 dark:border-emerald-900/40 dark:text-emerald-300'
                 : 'bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 hover:border-gray-300 dark:hover:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-800/40'
-            }`}
+              }`}
           >
             <MapPin size={20} />
             {locating ? 'Localizando...' : location ? `Ubicación detectada` : 'Detectar mi ubicación'}
@@ -961,7 +960,7 @@ const App = () => {
             themeMode={themeMode}
             onThemeModeChange={setThemeMode}
             locale={locale}
-            onLocaleChange={(l) => { setLocale(l); try { localStorage.setItem('locale', l); } catch {} }}
+            onLocaleChange={(l) => { setLocale(l); try { localStorage.setItem('locale', l); } catch { } }}
           />
         )}
 

@@ -76,22 +76,35 @@ export async function apiLoginLocal(email: string, password: string): Promise<Us
 
 /** Register a new user */
 export async function apiRegisterLocal(email: string, password: string, name?: string): Promise<User> {
-    const user = await apiFetch<User>('/users/register', {
+    const result = await apiFetch<{ id: string; name: string; email: string }>('/users/register', {
         method: 'POST',
         body: JSON.stringify({ email, password, name }),
     });
 
-    // Automatically login after register (if the backend returns the user profile)
-    // The backend register currently returns { id, name, email }, but we might need 
-    // a full login to get the complete profile or just treat this as the session.
-    // For now, let's just store what we have or fetch the full profile.
-    const fullUser = await apiGetUser(user.id);
+    // Try to fetch the full profile from the server
+    const fullUser = await apiGetUser(result.id);
     if (fullUser) {
         localStorage.setItem(SESSION_KEY, JSON.stringify(fullUser));
         return fullUser;
     }
 
-    return user as User;
+    // Fallback: build a complete User object with defaults
+    const newUser: User = {
+        id: result.id,
+        name: result.name || name || email.split('@')[0],
+        email: result.email || email,
+        role: 'citizen' as UserRole,
+        points: 0,
+        experience: 0,
+        inventory: [],
+        equippedFrame: undefined,
+        equippedBackground: undefined,
+        profileTag: undefined,
+        premium: false,
+        avatar: '',
+    };
+    localStorage.setItem(SESSION_KEY, JSON.stringify(newUser));
+    return newUser;
 }
 
 /** Logout */
