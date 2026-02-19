@@ -6,7 +6,7 @@ import IssueMap from './components/IssueMap';
 import StatsPanel from './components/StatsPanel';
 import LandingPage from './components/LandingPage';
 import AuthScreen from './components/AuthScreen';
-import ProfileSettingsPanel from './components/ProfileSettingsPanel';
+import ProfilePanel from './components/ProfilePanel';
 import ShopPanel from './components/ShopPanel';
 import IssueDetailModal from './components/IssueDetailModal';
 import { analyzeReportText, validateIssueEvidence, translateReport } from './services/geminiService';
@@ -1077,13 +1077,10 @@ const App = () => {
         )}
 
         {activeTab === 'profile' && user && (
-          <ProfileSettingsPanel
+          <ProfilePanel
             user={user}
             issues={issues}
             onUpdateUser={handleUpdateUser}
-            onLogout={handleLogout}
-            themeMode={themeMode}
-            onThemeModeChange={setThemeMode}
           />
         )}
 
