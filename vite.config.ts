@@ -8,6 +8,7 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 3000,
       host: true,
+      allowedHosts: ['reportaya.ddns.net', 'localhost'],
       strictPort: false,
       proxy: {
         '/api': {
