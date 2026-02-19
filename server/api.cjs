@@ -32,6 +32,58 @@ try {
   console.warn('⚠️ bcryptjs no está instalado. Registro y Login local fallarán.');
 }
 
+// Safe require for nodemailer
+let nodemailer;
+try {
+  nodemailer = require('nodemailer');
+} catch (e) {
+  nodemailer = null;
+  console.warn('⚠️ nodemailer no está instalado. Los correos no se enviarán.');
+}
+
+// ─── Email Service ────────────────────────────────────────────────
+let emailTransporter = null;
+if (nodemailer && process.env.SMTP_USER && process.env.SMTP_PASS) {
+  emailTransporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+  });
+  console.log('✅ Servicio de email configurado con', process.env.SMTP_USER);
+} else {
+  console.warn('⚠️ SMTP_USER / SMTP_PASS no configurados. Los emails se loguearan en consola.');
+}
+
+async function sendEmail(to, subject, html) {
+  if (emailTransporter) {
+    try {
+      await emailTransporter.sendMail({
+        from: `"ReportaYa" <${process.env.SMTP_USER}>`,
+        to, subject, html
+      });
+      console.log(`📧 Email enviado a ${to}: ${subject}`);
+    } catch (err) {
+      console.error('❌ Error enviando email:', err.message);
+    }
+  } else {
+    console.log(`📧 [SIMULADO] Email a ${to}:`);
+    console.log(`   Asunto: ${subject}`);
+    console.log(`   Contenido: ${html.substring(0, 200)}...`);
+  }
+}
+
+// ─── Password Strength Validation ─────────────────────────────────
+function validatePasswordStrength(password) {
+  const errors = [];
+  if (!password || password.length < 8) errors.push('Mínimo 8 caracteres');
+  if (!/[A-Z]/.test(password)) errors.push('Al menos una mayúscula');
+  if (!/[a-z]/.test(password)) errors.push('Al menos una minúscula');
+  if (!/[0-9]/.test(password)) errors.push('Al menos un número');
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/.test(password)) errors.push('Al menos un carácter especial (!@#$%...)');
+  return errors;
+}
+
+const crypto = require('crypto');
+
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017';
 const DB_NAME = process.env.DB_NAME || 'reportaya';
 const IS_PROD = process.env.NODE_ENV === 'production';
@@ -160,10 +212,21 @@ app.put('/api/users/:id', async (req, res) => {
 // POST /api/users/register — Register a new user with email + password
 app.post('/api/users/register', async (req, res) => {
   try {
-    const { email, password, name } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email y contraseña son requeridos' });
+    const { email, password, name, surname, postalCode } = req.body;
+    if (!email || !password || !surname || !postalCode) {
+      return res.status(400).json({ error: 'Todos los campos son obligatorios' });
     }
+
+    // Validate password strength
+    const pwErrors = validatePasswordStrength(password);
+    if (pwErrors.length > 0) {
+      return res.status(400).json({ error: 'Contraseña débil: ' + pwErrors.join(', ') });
+    }
+
+    // Strict Postal Code Validation Removed
+    // if (!postalCode.startsWith('41')) {
+    //   return res.status(400).json({ error: 'Solo se permiten registros con código postal de Sevilla (41xxx)' });
+    // }
 
     // Check if email already exists
     const existing = await db.collection('users').findOne({ email });
@@ -171,12 +234,12 @@ app.post('/api/users/register', async (req, res) => {
       return res.status(409).json({ error: 'Ya existe un usuario con ese email' });
     }
 
-
-
     const userId = `local-${Date.now()}`;
     const userProfile = {
       id: userId,
       name: name || email.split('@')[0],
+      surname,
+      postalCode,
       email,
       role: 'citizen',
       points: 0,
@@ -187,6 +250,7 @@ app.post('/api/users/register', async (req, res) => {
       profileTag: null,
       premium: false,
       avatar: '',
+      passwordHistory: [],  // Store previous password hashes
     };
 
     if (bcrypt) {
@@ -197,7 +261,30 @@ app.post('/api/users/register', async (req, res) => {
     }
 
     await db.collection('users').insertOne(userProfile);
-    res.status(201).json({ id: userProfile.id, name: userProfile.name, email: userProfile.email });
+
+    // Send welcome email
+    sendEmail(email, '¡Bienvenido a ReportaYa!', `
+      <div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:20px;">
+        <h1 style="color:#1e3a5f;">¡Bienvenido a ReportaYa! 🎉</h1>
+        <p>Hola <strong>${name || email.split('@')[0]}</strong>,</p>
+        <p>Tu cuenta ha sido creada correctamente. Ya puedes empezar a reportar incidencias en tu ciudad.</p>
+        <p><strong>Tus credenciales de acceso son:</strong></p>
+        <p>Correo electrónico: <strong>${email}</strong></p>
+        
+        <p>Si no creaste esta cuenta o te olvidas de la contraseña, por favor, cambia tus credenciales de acceso:</p>
+        <p><a href="http://localhost:5173/?view=forgot" style="color:#007bff;text-decoration:underline;">Cambiar contraseña</a></p>
+
+        <hr style="border:none;border-top:1px solid #eee;">
+        
+        <div style="text-align:center;margin-top:20px;">
+          <p style="color:#aaa;font-size:11px;">ReportaYa — La plataforma ciudadana de Sevilla</p>
+          <img src="https://via.placeholder.com/150x50?text=ReportaYa+Logo" alt="ReportaYa Logo" style="max-height:50px;display:block;margin:0 auto;">
+        </div>
+      </div>
+    `).catch(() => { });
+
+    const { passwordHistory, passwordHash, ...safeUser } = userProfile;
+    res.status(201).json(safeUser);
   } catch (err) {
     console.error('Error POST /api/users/register', err);
     res.status(500).json({ error: 'Error interno del servidor', details: err.message });
@@ -245,21 +332,169 @@ app.post('/api/users/login', async (req, res) => {
 app.post('/api/users/:id/change-password', async (req, res) => {
   try {
     const { oldPassword, newPassword } = req.body || {};
-    if (!oldPassword || !newPassword) return res.status(400).json({ error: 'Old and new passwords are required' });
+    if (!oldPassword || !newPassword) return res.status(400).json({ error: 'La contraseña actual y la nueva son requeridas' });
+
+    // Validate password strength
+    const pwErrors = validatePasswordStrength(newPassword);
+    if (pwErrors.length > 0) {
+      return res.status(400).json({ error: 'Contraseña débil: ' + pwErrors.join(', ') });
+    }
 
     const user = await db.collection('users').findOne({ id: req.params.id });
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
 
-    if (!bcrypt) return res.status(503).json({ error: 'Password subsystem not available. Please install bcryptjs.' });
+    if (!bcrypt) return res.status(503).json({ error: 'El sistema de seguridad no está disponible.' });
 
     const match = user.passwordHash ? await bcrypt.compare(oldPassword, user.passwordHash) : false;
     if (!match) return res.status(401).json({ error: 'Contraseña actual incorrecta' });
 
+    // Check password history — prevent reusing any of the last 10 passwords
+    const history = user.passwordHistory || [];
+    for (const oldHash of history) {
+      if (await bcrypt.compare(newPassword, oldHash)) {
+        return res.status(400).json({ error: 'No puedes reutilizar una contraseña anterior' });
+      }
+    }
+    // Also check if new password is same as current
+    if (await bcrypt.compare(newPassword, user.passwordHash)) {
+      return res.status(400).json({ error: 'La nueva contraseña debe ser diferente a la actual' });
+    }
+
     const newHash = await bcrypt.hash(newPassword, 10);
-    await db.collection('users').updateOne({ id: req.params.id }, { $set: { passwordHash: newHash } });
+
+    // Push old hash to history (keep last 10)
+    const updatedHistory = [...history, user.passwordHash].slice(-10);
+
+    await db.collection('users').updateOne(
+      { id: req.params.id },
+      { $set: { passwordHash: newHash, passwordHistory: updatedHistory } }
+    );
+
+    // Send notification email
+    if (user.email) {
+      sendEmail(user.email, 'Contraseña cambiada — ReportaYa', `
+        <div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:20px;">
+          <h2 style="color:#1e3a5f;">Contraseña actualizada 🔒</h2>
+          <p>Hola <strong>${user.name || 'usuario'}</strong>,</p>
+          <p>Tu contraseña de ReportaYa ha sido cambiada correctamente.</p>
+          <p>Si no realizaste este cambio, contacta con soporte inmediatamente.</p>
+          <p style="color:#888;font-size:12px;">Fecha: ${new Date().toLocaleString('es-ES')}</p>
+          <hr style="border:none;border-top:1px solid #eee;">
+          <p style="color:#aaa;font-size:11px;">ReportaYa — La plataforma ciudadana de Sevilla</p>
+        </div>
+      `).catch(() => { });
+    }
+
     res.json({ ok: true });
   } catch (err) {
     console.error('Error POST /api/users/:id/change-password', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// POST /api/users/forgot-password — Send reset link via email
+app.post('/api/users/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body || {};
+    if (!email) return res.status(400).json({ error: 'Email es requerido' });
+
+    const user = await db.collection('users').findOne({ email });
+    // Always return success (don't reveal if email exists)
+    if (!user) return res.json({ ok: true });
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    await db.collection('users').updateOne(
+      { email },
+      { $set: { resetToken, resetExpires } }
+    );
+
+    const domain = process.env.DOMAIN || 'http://localhost:5173';
+    const resetUrl = `${domain}/?reset=${resetToken}`;
+
+    sendEmail(email, 'Restablecer contraseña — ReportaYa', `
+      <div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:20px;">
+        <h2 style="color:#1e3a5f;">Restablecer contraseña 🔑</h2>
+        <p>Hola <strong>${user.name || 'usuario'}</strong>,</p>
+        <p>Has solicitado restablecer tu contraseña. Haz clic en el siguiente enlace:</p>
+        <p style="text-align:center;margin:30px 0;">
+          <a href="${resetUrl}" style="background:#1e3a5f;color:white;padding:12px 30px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block;">Restablecer Contraseña</a>
+        </p>
+        <p style="color:#888;font-size:12px;">Este enlace expira en 1 hora. Si no solicitaste este cambio, ignora este mensaje.</p>
+        <p style="color:#aaa;font-size:11px;">URL directa: ${resetUrl}</p>
+        <hr style="border:none;border-top:1px solid #eee;">
+        <p style="color:#aaa;font-size:11px;">ReportaYa — La plataforma ciudadana de Sevilla</p>
+      </div>
+    `).catch(() => { });
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Error POST /api/users/forgot-password', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// POST /api/users/reset-password — Reset password using token
+app.post('/api/users/reset-password', async (req, res) => {
+  try {
+    const { token, newPassword } = req.body || {};
+    if (!token || !newPassword) return res.status(400).json({ error: 'Token y nueva contraseña son requeridos' });
+
+    // Validate password strength
+    const pwErrors = validatePasswordStrength(newPassword);
+    if (pwErrors.length > 0) {
+      return res.status(400).json({ error: 'Contraseña débil: ' + pwErrors.join(', ') });
+    }
+
+    const user = await db.collection('users').findOne({ resetToken: token });
+    if (!user) return res.status(400).json({ error: 'Token inválido o expirado' });
+
+    if (new Date() > new Date(user.resetExpires)) {
+      return res.status(400).json({ error: 'El enlace ha expirado. Solicita uno nuevo.' });
+    }
+
+    if (!bcrypt) return res.status(503).json({ error: 'El sistema de seguridad no está disponible.' });
+
+    // Check password history
+    const history = user.passwordHistory || [];
+    for (const oldHash of history) {
+      if (await bcrypt.compare(newPassword, oldHash)) {
+        return res.status(400).json({ error: 'No puedes reutilizar una contraseña anterior' });
+      }
+    }
+    if (user.passwordHash && await bcrypt.compare(newPassword, user.passwordHash)) {
+      return res.status(400).json({ error: 'La nueva contraseña debe ser diferente a la actual' });
+    }
+
+    const newHash = await bcrypt.hash(newPassword, 10);
+    const updatedHistory = [...history, user.passwordHash].filter(Boolean).slice(-10);
+
+    await db.collection('users').updateOne(
+      { resetToken: token },
+      {
+        $set: { passwordHash: newHash, passwordHistory: updatedHistory },
+        $unset: { resetToken: '', resetExpires: '' }
+      }
+    );
+
+    // Notify user
+    if (user.email) {
+      sendEmail(user.email, 'Contraseña restablecida — ReportaYa', `
+        <div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:20px;">
+          <h2 style="color:#1e3a5f;">Contraseña restablecida ✅</h2>
+          <p>Tu contraseña ha sido cambiada correctamente. Ya puedes iniciar sesión.</p>
+          <p style="color:#888;font-size:12px;">Fecha: ${new Date().toLocaleString('es-ES')}</p>
+          <hr style="border:none;border-top:1px solid #eee;">
+          <p style="color:#aaa;font-size:11px;">ReportaYa — La plataforma ciudadana de Sevilla</p>
+        </div>
+      `).catch(() => { });
+    }
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Error POST /api/users/reset-password', err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -424,7 +659,7 @@ connectDB()
   });
 
 // ─── SERVE FRONTEND (Optional: for production) ─────────────────────
-app.get('{*path}', (req, res) => {
+app.get('*', (req, res) => {
   // If request is not an API call, serve the frontend
   if (!req.path.startsWith('/api') &&
     !req.path.startsWith('/create-checkout-session')) {

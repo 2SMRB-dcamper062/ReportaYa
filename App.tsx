@@ -9,7 +9,7 @@ import AuthScreen from './components/AuthScreen';
 import ProfileSettingsPanel from './components/ProfileSettingsPanel';
 import ShopPanel from './components/ShopPanel';
 import IssueDetailModal from './components/IssueDetailModal';
-import { analyzeReportText, validateIssueEvidence } from './services/geminiService';
+import { analyzeReportText, validateIssueEvidence, translateReport } from './services/geminiService';
 import {
   User as UserIcon, Mail, Shield, Camera, Edit2, Save, X,
   Star, Lock, Zap, Check, CheckCircle, Crown, LogOut, Moon, Sun, Globe, MapPin, Map as MapIcon, Search, Filter, Plus, ArrowRight, Info, Clock, AlertTriangle, Menu, Settings, ShoppingBag
@@ -27,20 +27,40 @@ import {
 import { debounce } from 'lodash';
 import { useLocale } from './i18n';
 
-// Mappings for i18n keys
+// Mappings for i18n keys — covers Spanish enum values AND English variants from the database
 const CATEGORY_KEYS: Record<string, string> = {
+  // Spanish enum values (full strings from IssueCategory enum)
   [IssueCategory.INFRASTRUCTURE]: 'cat.infra',
   [IssueCategory.LIGHTING]: 'cat.lighting',
   [IssueCategory.CLEANING]: 'cat.cleaning',
   [IssueCategory.NOISE]: 'cat.noise',
   [IssueCategory.PARKS]: 'cat.parks',
   [IssueCategory.OTHER]: 'cat.other',
+  // English equivalents (may come from DB/API)
+  'Infrastructure': 'cat.infra',
+  'Lighting': 'cat.lighting',
+  'Cleaning': 'cat.cleaning',
+  'Noise': 'cat.noise',
+  'Parks': 'cat.parks',
+  'Other': 'cat.other',
+  // Abbreviated Spanish (only those NOT already covered by enum values)
+  'Infraestructura': 'cat.infra',
+  'Limpieza': 'cat.cleaning',
+  'Parques': 'cat.parks',
 };
 
 const STATUS_KEYS: Record<string, string> = {
+  // Spanish enum values
   [IssueStatus.PENDING]: 'status.pending',
   [IssueStatus.IN_PROGRESS]: 'status.in_progress',
   [IssueStatus.RESOLVED]: 'status.resolved',
+  // English equivalents (may come from DB/API)
+  'Pending': 'status.pending',
+  'In Progress': 'status.in_progress',
+  'Resolved': 'status.resolved',
+  'pending': 'status.pending',
+  'in_progress': 'status.in_progress',
+  'resolved': 'status.resolved',
 };
 
 // --- Sub-components for cleaner App.tsx ---
@@ -99,16 +119,19 @@ const Header = ({ user, activeTab, setActiveTab, onLogout, onLoginClick }: any) 
             <Globe size={18} />
           </button>
 
+          {/* Navigation for everyone (but protected) */}
           <button
-            onClick={() => setActiveTab('map')}
-            className={`p-2.5 rounded-full transition-all duration-200 ${activeTab === 'map' ? 'bg-secondary text-primary shadow-md' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}
+            onClick={() => {
+              if (!user) onLoginClick();
+              else setActiveTab('map');
+            }}
+            className={`p-2.5 rounded-full transition-all duration-200 ${activeTab === 'map' ? 'bg-secondary text-primary shadow-sm' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}
             title={t('nav.map')}
           >
-            {/* (Settings moved to profile area) */}
             <MapPin size={18} />
           </button>
 
-          {/* Only Citizen can report */}
+          {/* Create Report (only citizen or guest) */}
           {(user?.role === UserRole.CITIZEN || !user) && (
             <button
               onClick={() => {
@@ -133,10 +156,13 @@ const Header = ({ user, activeTab, setActiveTab, onLogout, onLoginClick }: any) 
             </button>
           )}
 
-          {/* Shop for Citizens */}
-          {user?.role === UserRole.CITIZEN && (
+          {/* Shop (only citizen or guest) */}
+          {(user?.role === UserRole.CITIZEN || !user) && (
             <button
-              onClick={() => setActiveTab('shop')}
+              onClick={() => {
+                if (!user) onLoginClick();
+                else setActiveTab('shop');
+              }}
               className={`p-2.5 rounded-full transition-all duration-200 ${activeTab === 'shop' ? 'bg-secondary text-primary shadow-md' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}
               title={t('nav.shop')}
             >
@@ -166,9 +192,11 @@ const Header = ({ user, activeTab, setActiveTab, onLogout, onLoginClick }: any) 
 
                   {/* Online Dot */}
                   <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-400 rounded-full border-2 border-primary"></div>
-                  <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center text-white shadow-lg animate-bounce z-50">
-                    <Zap size={14} />
-                  </div>
+                  {showLevelUp && (
+                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center text-white shadow-lg animate-bounce z-50">
+                      <Zap size={14} />
+                    </div>
+                  )}
                   {user.premium && (
                     <div className="absolute -top-2 left-8 w-6 h-6 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 shadow-md z-40">
                       <Crown size={12} />
@@ -193,6 +221,15 @@ const Header = ({ user, activeTab, setActiveTab, onLogout, onLoginClick }: any) 
                   )}
                 </div>
               </button>
+
+              {/* Visible Logout Button */}
+              <button
+                onClick={onLogout}
+                className="p-2.5 rounded-full text-white/70 hover:bg-white/10 hover:text-red-300 transition-all duration-200"
+                title={t('nav.logout')}
+              >
+                <LogOut size={18} />
+              </button>
             </>
           ) : (
             <button
@@ -208,7 +245,7 @@ const Header = ({ user, activeTab, setActiveTab, onLogout, onLoginClick }: any) 
   );
 };
 
-const ReportForm = ({ onSubmit, onCancel }: { onSubmit: (data: Partial<Issue>) => void, onCancel: () => void }) => {
+const ReportForm = ({ onSubmit, onCancel, user }: { onSubmit: (data: Partial<Issue>) => void, onCancel: () => void, user: User | null }) => {
   const { t } = useLocale();
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
@@ -250,25 +287,41 @@ const ReportForm = ({ onSubmit, onCancel }: { onSubmit: (data: Partial<Issue>) =
           });
           setLocating(false);
         },
-        () => {
-          alert(t('report.geoloc_error') || 'No se pudo obtener la ubicación.');
-          setLocation(SEVILLA_CENTER);
+        (error) => {
+          console.error('Geolocation error:', error);
+          alert(t('report.geoloc_error') || 'No se pudo obtener la ubicación. Asegúrate de permitir el acceso a la ubicación.');
           setLocating(false);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
         }
       );
     } else {
-      setLocation(SEVILLA_CENTER);
+      alert(t('report.geoloc_error') || 'Tu navegador no soporta geolocalización.');
       setLocating(false);
     }
   };
 
   const handleSubmit = (e: any) => {
     e.preventDefault();
+    if (!location) {
+      alert(t('report.location_required') || 'Debes seleccionar una ubicación para enviar el reporte.');
+      return;
+    }
+
+    // Strict Postal Code Validation for Reporting (Sevilla 41xxx)
+    if (user?.postalCode && !user.postalCode.startsWith('41')) {
+      alert(t('auth.postal_code_error') || 'Solo residentes de Sevilla pueden crear reportes.');
+      return;
+    }
+
     onSubmit({
       title,
       description: desc,
       category,
-      location: location || SEVILLA_CENTER,
+      location,
       imageUrl: previewUrl || undefined
     });
   };
@@ -329,10 +382,10 @@ const ReportForm = ({ onSubmit, onCancel }: { onSubmit: (data: Partial<Issue>) =
                       <span className="text-xs text-gray-500 dark:text-slate-300">{t('report.validating')}</span>
                     )}
                     {evidenceStatus === 'valid' && (
-                      <span className="text-xs text-green-600 font-bold">✓ Evidencia válida ({(evidenceConfidence || 0).toFixed(2)})</span>
+                      <span className="text-xs text-green-600 font-bold">✓ {t('evidence.valid')} ({(evidenceConfidence || 0).toFixed(2)})</span>
                     )}
                     {evidenceStatus === 'invalid' && (
-                      <span className="text-xs text-red-600 font-bold">✕ No coincide</span>
+                      <span className="text-xs text-red-600 font-bold">✕ {t('evidence.no_match')}</span>
                     )}
                     <button
                       type="button"
@@ -383,7 +436,7 @@ const ReportForm = ({ onSubmit, onCancel }: { onSubmit: (data: Partial<Issue>) =
                     }
                   } catch (err) {
                     setEvidenceStatus('invalid');
-                    setEvidenceReason('Error al validar la imagen');
+                    setEvidenceReason(t('evidence.error'));
                   }
                 };
                 reader.readAsDataURL(f);
@@ -513,7 +566,33 @@ interface IssueCardProps {
 }
 
 const IssueCard: React.FC<IssueCardProps> = ({ issue, onClick, isAdmin, onStatusChange }) => {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
+
+  // Map original Spanish seed titles → mock i18n key index
+  const SEED_TITLE_MAP: Record<string, string> = {
+    'Farola fundida en Plaza de España': '1',
+    'Bache peligroso en Calle Betis': '2',
+    'Contenedores desbordados Triana': '3',
+    'Ruido excesivo bar local': '4',
+  };
+
+  // 1) Check issue.translations (auto-translated user reports)
+  // 2) Check seed title map (demo/seed reports from DB)
+  // 3) Fall back to raw text
+  const translateField = (field: 'title' | 'desc') => {
+    const raw = field === 'title' ? issue.title : issue.description;
+    const descField = field === 'desc' ? 'description' : 'title';
+    // Auto-translated content from Gemini/MyMemory
+    if (issue.translations?.[locale]?.[descField]) return issue.translations[locale][descField];
+    // Seed report lookup by title
+    const seedIdx = SEED_TITLE_MAP[issue.title || ''];
+    if (seedIdx) {
+      const key = `mock.${seedIdx}.${field}`;
+      const translated = t(key);
+      if (translated !== key) return translated;
+    }
+    return raw;
+  };
 
   try {
     const getStatusColor = (s: IssueStatus) => {
@@ -547,10 +626,10 @@ const IssueCard: React.FC<IssueCardProps> = ({ issue, onClick, isAdmin, onStatus
         </div>
         <div className="p-5">
           <h3 className="font-bold text-gray-800 dark:text-slate-100 text-lg mb-2 leading-tight group-hover:text-primary transition-colors line-clamp-1">
-            {issue.title}
+            {translateField('title')}
           </h3>
           <p className="text-gray-500 dark:text-slate-300 text-sm mb-4 line-clamp-2 leading-relaxed">
-            {issue.description}
+            {translateField('desc')}
           </p>
 
           <div className="flex justify-between items-center text-xs text-gray-400 dark:text-slate-400 border-t border-gray-50 dark:border-slate-800 pt-3">
@@ -664,12 +743,12 @@ const App = () => {
     // Prevent non-premium users from purchasing premium items
     const isPremiumItem = (item.cost || 0) >= 400;
     if (isPremiumItem && !user.premium) {
-      alert('Este artículo solo está disponible para usuarios Premium. Consigue Premium para poder reclamarlo.');
+      alert(t('alert.premium_only_item'));
       return;
     }
 
     if (user.points < item.cost) {
-      alert("No tienes suficientes puntos.");
+      alert(t('alert.not_enough_points'));
       return;
     }
 
@@ -705,7 +784,7 @@ const App = () => {
     // Purchase premium with points
     const cost = PREMIUM_COST_POINTS || 500;
     if ((user.points || 0) < cost) {
-      alert(`No tienes suficientes puntos. Necesitas ${cost} pts para comprar Premium.`);
+      alert(t('alert.not_enough_premium').replace('{cost}', String(cost)));
       return;
     }
 
@@ -716,7 +795,7 @@ const App = () => {
     };
     setUser(updatedUser);
     apiSaveUser(updatedUser).catch(err => console.error('Error guardando compra premium:', err));
-    alert('Gracias por comprar Premium. Tu cuenta ha sido actualizada.');
+    alert(t('alert.premium_purchased'));
   };
 
   const handleStartPremiumCheckout = async (email?: string) => {
@@ -737,7 +816,7 @@ const App = () => {
       await (stripe as any).redirectToCheckout({ sessionId: data.id });
     } catch (err: any) {
       console.error('Error iniciando checkout:', err);
-      alert('No se pudo iniciar el pago: ' + (err.message || err));
+      alert(t('alert.checkout_error') + (err.message || err));
     }
   };
 
@@ -757,7 +836,23 @@ const App = () => {
 
       // Persist report in background so UI/navigation isn't blocked by large image uploads
       apiSaveReport(newIssue)
-        .then(() => console.log('Reporte guardado exitosamente en MongoDB.'))
+        .then(() => {
+          console.log('Reporte guardado exitosamente en MongoDB.');
+          // Translate in the background after saving
+          if (newIssue.title && newIssue.description) {
+            translateReport(newIssue.title, newIssue.description)
+              .then(translations => {
+                const translatedIssue = { ...newIssue, translations };
+                // Update local state with translations
+                setIssues(prev => prev.map(i => i.id === newIssue.id ? translatedIssue : i));
+                // Persist translations to DB
+                apiUpdateReport(newIssue.id, { translations }).catch(err =>
+                  console.error('Error guardando traducciones:', err)
+                );
+              })
+              .catch(err => console.error('Error traduciendo reporte:', err));
+          }
+        })
         .catch(err => console.error('Error al guardar el reporte (background):', err));
 
       // Otorgar puntos y experiencia al enviar el reporte (no bloqueante)
@@ -902,7 +997,7 @@ const App = () => {
 
         {/* Dynamic Content */}
 
-        {activeTab === 'map' && (
+        {activeTab === 'map' && user && (
           <div className="h-[calc(100vh-160px)] flex flex-col animate-fade-in">
             <FilterBar />
 
@@ -935,23 +1030,46 @@ const App = () => {
                   focusedIssue={focusedIssue}
                 />
 
-                {/* Map Overlay Legend */}
-                <div className="absolute bottom-6 left-6 bg-white/95 dark:bg-slate-900/90 backdrop-blur-md p-4 rounded-2xl shadow-xl text-xs space-y-2 z-[400] border border-gray-100 dark:border-slate-700">
-                  <div className="font-bold text-gray-500 dark:text-slate-300 uppercase tracking-wider mb-2">{t('map.legend')}</div>
-                  <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#EF4444] shadow-sm"></div>{t('map.pending')}</div>
-                  <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#F59E0B] shadow-sm"></div>{t('map.in_progress')}</div>
-                  <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#48C9B0] shadow-sm"></div>{t('map.resolved')}</div>
-                </div>
+                {/* Map Overlay Legend — hidden when report modal is open */}
+                {!selectedIssue && (
+                  <div className="absolute bottom-6 left-6 bg-white/95 dark:bg-slate-900/90 backdrop-blur-md p-4 rounded-2xl shadow-xl text-xs space-y-2 z-[400] border border-gray-100 dark:border-slate-700">
+                    <div className="font-bold text-gray-500 dark:text-slate-300 uppercase tracking-wider mb-2">{t('map.legend')}</div>
+                    <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#EF4444] shadow-sm"></div>{t('map.pending')}</div>
+                    <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#F59E0B] shadow-sm"></div>{t('map.in_progress')}</div>
+                    <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#48C9B0] shadow-sm"></div>{t('map.resolved')}</div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         )}
 
         {activeTab === 'create' && user?.role === UserRole.CITIZEN && (
-          <ReportForm
-            onSubmit={handleCreateIssue}
-            onCancel={() => setActiveTab('map')}
-          />
+          (user.postalCode?.startsWith('41') || !user.postalCode) ? (
+            <ReportForm
+              onSubmit={handleCreateIssue}
+              onCancel={() => setActiveTab('map')}
+              user={user}
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-8 animate-fade-in">
+              <div className="bg-gray-100 dark:bg-slate-800 p-6 rounded-full mb-6">
+                <Lock size={48} className="text-gray-400 dark:text-slate-500" />
+              </div>
+              <h3 className="text-2xl font-black text-gray-800 dark:text-slate-100 mb-2">
+                {t('report.sevilla_only') || 'Solo disponible para Sevilla'}
+              </h3>
+              <p className="text-gray-500 dark:text-slate-400 max-w-md mx-auto mb-8 leading-relaxed">
+                {t('report.location_restriction') || 'El sistema de reportes está limitado a usuarios de Sevilla (41xxx).'}
+              </p>
+              <button
+                onClick={() => setActiveTab('map')}
+                className="px-8 py-3 bg-primary text-white rounded-xl shadow-lg hover:bg-blue-900 transition font-bold"
+              >
+                {t('report.back_map') || 'Volver al Mapa'}
+              </button>
+            </div>
+          )
         )}
 
         {activeTab === 'admin' && user?.role === UserRole.ADMIN && (

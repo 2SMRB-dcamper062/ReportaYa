@@ -294,28 +294,28 @@ const ShopPanel: React.FC<ShopPanelProps> = ({ user, onPurchase, onEquip, onBuyP
                       <div className="mt-1 text-yellow-300"><Star size={18} /></div>
                       <div>
                         <div className="font-semibold">{t('shop.premium_exclusive')}</div>
-                        <div className="text-xs text-white/80">Accede a imágenes y estilos premium.</div>
+                        <div className="text-xs text-white/80">{t('shop.premium_desc_exclusive')}</div>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
                       <div className="mt-1 text-yellow-300"><Trophy size={18} /></div>
                       <div>
                         <div className="font-semibold">{t('shop.premium_tags')}</div>
-                        <div className="text-xs text-white/80">Etiquetas y distintivos únicos.</div>
+                        <div className="text-xs text-white/80">{t('shop.premium_desc_tags')}</div>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
                       <div className="mt-1 text-yellow-300"><Gift size={18} /></div>
                       <div>
-                        <div className="font-semibold">Bonificaciones</div>
-                        <div className="text-xs text-white/80">Puntos y regalos especiales.</div>
+                        <div className="font-semibold">{t('shop.premium_bonuses')}</div>
+                        <div className="text-xs text-white/80">{t('shop.premium_desc_bonuses')}</div>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
                       <div className="mt-1 text-yellow-300"><Check size={18} /></div>
                       <div>
-                        <div className="font-semibold">Soporte VIP</div>
-                        <div className="text-xs text-white/80">Atención preferente.</div>
+                        <div className="font-semibold">{t('shop.premium_vip')}</div>
+                        <div className="text-xs text-white/80">{t('shop.premium_desc_vip')}</div>
                       </div>
                     </div>
                   </div>

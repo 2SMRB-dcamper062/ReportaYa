@@ -36,6 +36,7 @@ export interface Issue {
   votes?: number; // Número de votos del reporte
   author?: string; // Made optional to resolve the error
   adminResponse?: string;
+  translations?: Record<string, { title: string; description: string }>; // Auto-translated content per locale
 }
 
 export type ItemType = 'frame' | 'background' | 'badge';
@@ -64,5 +65,7 @@ export interface User {
   experience?: number;
   profileTag?: string;
   premium?: boolean;
+  surname?: string; // Apellidos
+  postalCode?: string; // Código postal
   password?: string;
 }

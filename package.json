@@ -4,8 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "start": "concurrently -n API,VITE -c cyan,magenta \"node server/api.cjs\" \"vite\"",
-    "dev": "concurrently -n API,VITE -c cyan,magenta \"node server/api.cjs\" \"vite\"",
+    "start": "concurrently -n MONGO,API,VITE -c green,cyan,magenta \"mongod\" \"node server/api.cjs\" \"vite\"",
+    "dev": "concurrently -n MONGO,API,VITE -c green,cyan,magenta \"mongod\" \"node server/api.cjs\" \"vite\"",
     "dev:api": "node server/api.cjs",
     "dev:vite": "vite",
     "build": "vite build",
@@ -26,6 +26,7 @@
     "lodash": "^4.17.21",
     "lucide-react": "^0.447.0",
     "mongodb": "^6.12.0",
+    "nodemailer": "^8.0.1",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "recharts": "^3.6.0",

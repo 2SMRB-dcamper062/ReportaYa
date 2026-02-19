@@ -74,37 +74,20 @@ export async function apiLoginLocal(email: string, password: string): Promise<Us
     return user;
 }
 
+// Fallback: build a complete User object with defaults
 /** Register a new user */
-export async function apiRegisterLocal(email: string, password: string, name?: string): Promise<User> {
-    const result = await apiFetch<{ id: string; name: string; email: string }>('/users/register', {
+export async function apiRegisterLocal(email: string, password: string, name: string, surname: string, postalCode: string): Promise<User> {
+    const result = await apiFetch<any>('/users/register', {
         method: 'POST',
-        body: JSON.stringify({ email, password, name }),
+        body: JSON.stringify({ email, password, name, surname, postalCode }),
     });
 
-    // Try to fetch the full profile from the server
-    const fullUser = await apiGetUser(result.id);
-    if (fullUser) {
-        localStorage.setItem(SESSION_KEY, JSON.stringify(fullUser));
-        return fullUser;
-    }
+    // Check if result is a user or error
+    if (!result.id) throw new Error('Registration failed');
 
-    // Fallback: build a complete User object with defaults
-    const newUser: User = {
-        id: result.id,
-        name: result.name || name || email.split('@')[0],
-        email: result.email || email,
-        role: 'citizen' as UserRole,
-        points: 0,
-        experience: 0,
-        inventory: [],
-        equippedFrame: undefined,
-        equippedBackground: undefined,
-        profileTag: undefined,
-        premium: false,
-        avatar: '',
-    };
-    localStorage.setItem(SESSION_KEY, JSON.stringify(newUser));
-    return newUser;
+    const user = result as User;
+    localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+    return user;
 }
 
 /** Logout */
@@ -128,6 +111,22 @@ export async function apiChangePassword(userId: string, oldPassword: string, new
     await apiFetch(`/users/${encodeURIComponent(userId)}/change-password`, {
         method: 'POST',
         body: JSON.stringify({ oldPassword, newPassword }),
+    });
+}
+
+/** Send a forgot-password email */
+export async function apiForgotPassword(email: string): Promise<void> {
+    await apiFetch('/users/forgot-password', {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+    });
+}
+
+/** Reset password using a token from the email link */
+export async function apiResetPassword(token: string, newPassword: string): Promise<void> {
+    await apiFetch('/users/reset-password', {
+        method: 'POST',
+        body: JSON.stringify({ token, newPassword }),
     });
 }
 
