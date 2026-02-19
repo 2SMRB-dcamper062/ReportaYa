@@ -10,6 +10,7 @@
     "dev:vite": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "serve": "npm run build && cross-env NODE_ENV=production node server/api.cjs",
     "create-admin": "node server/create_admin.cjs",
     "seed:users": "node server/seed_users.cjs",
     "server": "node server/api.cjs"
@@ -37,6 +38,7 @@
     "@types/react-dom": "^19.0.3",
     "@vitejs/plugin-react": "^5.0.0",
     "concurrently": "^9.1.2",
+    "cross-env": "^10.1.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
   }

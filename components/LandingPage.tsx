@@ -1,11 +1,13 @@
 import React from 'react';
-import { MapPin, Camera, CheckCircle, ArrowRight, Building2, Users, Map } from 'lucide-react';
+import { MapPin, Camera, CheckCircle, ArrowRight } from 'lucide-react';
+import { useLocale } from '../i18n';
 
 interface LandingPageProps {
   onStart: () => void;
 }
 
 const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
+  const { t } = useLocale();
   return (
     <div className="flex flex-col min-h-[85vh] animate-fade-in pb-10">
 
@@ -34,18 +36,18 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-secondary"></span>
             </span>
-            La plataforma ciudadana de Sevilla
+            {t('landing.platform')}
           </div>
 
           <h1 className="text-6xl md:text-8xl font-black mb-8 tracking-tight text-slate-900 dark:text-slate-100 leading-[0.9]">
-            Tu barrio, <br />
+            {t('landing.hero_line1')} <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-blue-600 to-secondary">
-              en buenas manos.
+              {t('landing.hero_line2')}
             </span>
           </h1>
 
           <p className="text-xl md:text-2xl text-slate-600 dark:text-slate-300 max-w-xl mb-10 font-medium leading-relaxed drop-shadow-sm">
-            Reporta incidencias urbanas al instante y colabora con el Ayuntamiento para hacer de Sevilla un lugar mejor para todos.
+            {t('landing.subtitle')}
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-start gap-4">
@@ -53,14 +55,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
               onClick={onStart}
               className="group bg-primary text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-blue-900 transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1 flex items-center gap-3 w-full sm:w-auto justify-center"
             >
-              Empezar Ahora
+              {t('landing.cta_start')}
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
             <button
               onClick={onStart}
               className="px-8 py-4 rounded-full font-bold text-lg bg-white/80 dark:bg-slate-900/70 backdrop-blur-sm text-slate-700 dark:text-slate-100 border border-white/50 dark:border-white/10 hover:bg-white dark:hover:bg-slate-900 transition-all shadow-sm hover:shadow-md w-full sm:w-auto"
             >
-              Explorar Mapa
+              {t('landing.cta_map')}
             </button>
           </div>
         </div>
@@ -75,9 +77,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
               <div className="w-14 h-14 bg-gradient-to-br from-blue-100 to-blue-50 dark:from-slate-800 dark:to-slate-700 rounded-2xl flex items-center justify-center mb-6 text-primary">
                 <Camera size={28} />
               </div>
-              <h3 className="text-xl font-bold mb-3 text-slate-800 dark:text-slate-100">1. Captura</h3>
+              <h3 className="text-xl font-bold mb-3 text-slate-800 dark:text-slate-100">{t('landing.step1_title')}</h3>
               <p className="text-slate-500 dark:text-slate-300 leading-relaxed">
-                Toma una foto del problema. Y adjuntala en la aplicación.
+                {t('landing.step1_desc')}
               </p>
             </div>
 
@@ -87,9 +89,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
               <div className="w-14 h-14 bg-gradient-to-br from-teal-100 to-teal-50 dark:from-slate-800 dark:to-slate-700 rounded-2xl flex items-center justify-center mb-6 text-secondary">
                 <MapPin size={28} />
               </div>
-              <h3 className="text-xl font-bold mb-3 text-slate-800 dark:text-slate-100">2. Geolocaliza</h3>
+              <h3 className="text-xl font-bold mb-3 text-slate-800 dark:text-slate-100">{t('landing.step2_title')}</h3>
               <p className="text-slate-500 dark:text-slate-300 leading-relaxed">
-                Confirma la ubicación exacta en el mapa interactivo para que los servicios sepan dónde actuar.
+                {t('landing.step2_desc')}
               </p>
             </div>
 
@@ -98,9 +100,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
               <div className="w-14 h-14 bg-gradient-to-br from-yellow-100 to-yellow-50 dark:from-slate-800 dark:to-slate-700 rounded-2xl flex items-center justify-center mb-6 text-yellow-600">
                 <CheckCircle size={28} />
               </div>
-              <h3 className="text-xl font-bold mb-3 text-slate-800 dark:text-slate-100">3. Resuelve</h3>
+              <h3 className="text-xl font-bold mb-3 text-slate-800 dark:text-slate-100">{t('landing.step3_title')}</h3>
               <p className="text-slate-500 dark:text-slate-300 leading-relaxed">
-                Gana puntos cuando tu incidencia sea validada y observa cómo se soluciona en tiempo real.
+                {t('landing.step3_desc')}
               </p>
             </div>
           </div>
@@ -114,19 +116,19 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center divide-x divide-white/10">
             <div>
               <div className="text-4xl md:text-5xl font-black text-secondary mb-2">15</div>
-              <div className="text-sm md:text-base text-gray-400 uppercase tracking-widest font-bold">Distritos</div>
+              <div className="text-sm md:text-base text-gray-400 uppercase tracking-widest font-bold">{t('landing.stat_districts')}</div>
             </div>
             <div>
               <div className="text-4xl md:text-5xl font-black text-white mb-2">2.5k</div>
-              <div className="text-sm md:text-base text-gray-400 uppercase tracking-widest font-bold">Vecinos</div>
+              <div className="text-sm md:text-base text-gray-400 uppercase tracking-widest font-bold">{t('landing.stat_neighbors')}</div>
             </div>
             <div>
               <div className="text-4xl md:text-5xl font-black text-blue-400 mb-2">850</div>
-              <div className="text-sm md:text-base text-gray-400 uppercase tracking-widest font-bold">Resueltas</div>
+              <div className="text-sm md:text-base text-gray-400 uppercase tracking-widest font-bold">{t('landing.stat_resolved')}</div>
             </div>
             <div>
               <div className="text-4xl md:text-5xl font-black text-yellow-400 mb-2">4.8</div>
-              <div className="text-sm md:text-base text-gray-400 uppercase tracking-widest font-bold">Valoración</div>
+              <div className="text-sm md:text-base text-gray-400 uppercase tracking-widest font-bold">{t('landing.stat_rating')}</div>
             </div>
           </div>
         </div>

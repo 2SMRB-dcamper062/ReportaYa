@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { User } from '../types';
 import { apiChangePassword, getStoredUser } from '../services/api';
-import { Lock, LogOut, SunMoon, Globe } from 'lucide-react';
+import { Lock, LogOut, Moon, Globe } from 'lucide-react';
 
 interface SettingsPanelProps {
   user: User | null;
@@ -12,8 +12,8 @@ interface SettingsPanelProps {
   onLocaleChange: (l: string) => void;
 }
 
-const SettingsPanel: React.FC<SettingsPanelProps> = ({ user, onLogout, themeMode, onThemeModeChange }) => {
-  const [localeState, setLocaleState] = useState<string>(localStorage.getItem('locale') || 'es');
+const SettingsPanel: React.FC<SettingsPanelProps> = ({ user, onLogout, themeMode, onThemeModeChange, locale, onLocaleChange }) => {
+  const [localeState, setLocaleState] = useState<string>(locale || localStorage.getItem('locale') || 'es');
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [changing, setChanging] = useState(false);
@@ -21,11 +21,9 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ user, onLogout, themeMode
 
   const handleLocaleChange = (l: string) => {
     setLocaleState(l);
-    try { localStorage.setItem('locale', l); } catch {}
-    if (typeof (window as any).onLocaleChange === 'function') {
-      try { (window as any).onLocaleChange(l); } catch {}
-    }
-    setMsg('Idioma guardado');
+    try { localStorage.setItem('locale', l); } catch { }
+    if (typeof onLocaleChange === 'function') onLocaleChange(l);
+    setMsg('Idioma guardado / Language saved');
     setTimeout(() => setMsg(null), 2000);
   };
 
@@ -54,11 +52,11 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ user, onLogout, themeMode
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="text-xs text-gray-400">Idioma</label>
+            <label className="text-xs text-gray-400 flex items-center gap-1"><Globe size={12} /> Idioma / Language</label>
             <div className="mt-2 flex gap-2">
-              <select value={localeState} onChange={(e) => { handleLocaleChange(e.target.value); if (typeof onLocaleChange === 'function') onLocaleChange(e.target.value); }} className="w-full p-3 border rounded-xl bg-white dark:bg-slate-950/40 dark:border-slate-700 dark:text-slate-100">
-                <option value="es">Español</option>
-                <option value="en">English</option>
+              <select value={localeState} onChange={(e) => handleLocaleChange(e.target.value)} className="w-full p-3 border rounded-xl bg-white dark:bg-slate-950/40 dark:border-slate-700 dark:text-slate-100">
+                <option value="es">🇪🇸 Español</option>
+                <option value="en">🇬🇧 English</option>
               </select>
             </div>
           </div>
@@ -66,8 +64,8 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ user, onLogout, themeMode
           <div>
             <label className="text-xs text-gray-400">Tema</label>
             <div className="mt-2 flex items-center gap-3">
-              <button onClick={() => onThemeModeChange(themeMode === 'dark' ? 'light' : 'dark')} className="px-4 py-2 rounded-xl bg-gray-100 dark:bg-slate-800 text-sm">
-                <SunMoon className="inline mr-2" /> Alternar tema ({themeMode})
+              <button onClick={() => onThemeModeChange(themeMode === 'dark' ? 'light' : 'dark')} className="px-4 py-2 rounded-xl bg-gray-100 dark:bg-slate-800 text-sm flex items-center gap-2">
+                <Moon size={16} /> {themeMode === 'dark' ? 'Modo oscuro / Dark mode' : 'Modo claro / Light mode'}
               </button>
             </div>
           </div>

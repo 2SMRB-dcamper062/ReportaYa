@@ -6,28 +6,14 @@ import IssueMap from './components/IssueMap';
 import StatsPanel from './components/StatsPanel';
 import LandingPage from './components/LandingPage';
 import AuthScreen from './components/AuthScreen';
-import ProfilePanel from './components/ProfilePanel';
-import SettingsPanel from './components/SettingsPanel';
+import ProfileSettingsPanel from './components/ProfileSettingsPanel';
 import ShopPanel from './components/ShopPanel';
 import IssueDetailModal from './components/IssueDetailModal';
 import { analyzeReportText, validateIssueEvidence } from './services/geminiService';
 import {
-  MapPin,
-  Map,
-  Plus,
-  User as UserIcon,
-  LogOut,
-  Zap,
-  Filter,
-  CheckCircle,
-  Clock,
-  Search,
-  Camera,
-  ShoppingBag,
-  Crown,
-  Info
+  User as UserIcon, Mail, Shield, Camera, Edit2, Save, X,
+  Star, Lock, Zap, Check, CheckCircle, Crown, LogOut, Moon, Sun, Globe, MapPin, Map as MapIcon, Search, Filter, Plus, ArrowRight, Info, Clock, AlertTriangle, Menu, Settings, ShoppingBag
 } from 'lucide-react';
-import { Settings } from 'lucide-react';
 import {
   apiSaveUser,
   apiSaveReport,
@@ -39,6 +25,23 @@ import {
   apiLogoutLocal
 } from './services/api';
 import { debounce } from 'lodash';
+import { useLocale } from './i18n';
+
+// Mappings for i18n keys
+const CATEGORY_KEYS: Record<string, string> = {
+  [IssueCategory.INFRASTRUCTURE]: 'cat.infra',
+  [IssueCategory.LIGHTING]: 'cat.lighting',
+  [IssueCategory.CLEANING]: 'cat.cleaning',
+  [IssueCategory.NOISE]: 'cat.noise',
+  [IssueCategory.PARKS]: 'cat.parks',
+  [IssueCategory.OTHER]: 'cat.other',
+};
+
+const STATUS_KEYS: Record<string, string> = {
+  [IssueStatus.PENDING]: 'status.pending',
+  [IssueStatus.IN_PROGRESS]: 'status.in_progress',
+  [IssueStatus.RESOLVED]: 'status.resolved',
+};
 
 // --- Sub-components for cleaner App.tsx ---
 
@@ -57,6 +60,7 @@ function getInitialThemeMode(): ThemeMode {
 }
 
 const Header = ({ user, activeTab, setActiveTab, onLogout, onLoginClick }: any) => {
+  const { t } = useLocale();
   const experience = user?.experience || 0;
   const level = Math.floor(experience / 100) + 1;
   const expCurrent = Math.max(0, experience - (level - 1) * 100);
@@ -90,15 +94,15 @@ const Header = ({ user, activeTab, setActiveTab, onLogout, onLoginClick }: any) 
           <button
             onClick={() => setActiveTab('home')}
             className={`p-2.5 rounded-full transition-all duration-200 ${activeTab === 'home' ? 'bg-secondary text-primary shadow-md' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}
-            title="Inicio"
+            title={t('nav.home')}
           >
-            <Map size={18} />
+            <Globe size={18} />
           </button>
 
           <button
             onClick={() => setActiveTab('map')}
             className={`p-2.5 rounded-full transition-all duration-200 ${activeTab === 'map' ? 'bg-secondary text-primary shadow-md' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}
-            title="Mapa de Incidencias"
+            title={t('nav.map')}
           >
             {/* (Settings moved to profile area) */}
             <MapPin size={18} />
@@ -112,7 +116,7 @@ const Header = ({ user, activeTab, setActiveTab, onLogout, onLoginClick }: any) 
                 else setActiveTab('create');
               }}
               className={`p-2.5 rounded-full transition-all duration-200 ${activeTab === 'create' ? 'bg-secondary text-primary shadow-md' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}
-              title="Crear Reporte"
+              title={t('nav.create')}
             >
               <Plus size={18} />
             </button>
@@ -123,7 +127,7 @@ const Header = ({ user, activeTab, setActiveTab, onLogout, onLoginClick }: any) 
             <button
               onClick={() => setActiveTab('admin')}
               className={`p-2.5 rounded-full transition-all duration-200 ${activeTab === 'admin' ? 'bg-secondary text-primary shadow-md' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}
-              title="Panel Admin"
+              title={t('ps.admin_panel')}
             >
               <Zap size={18} />
             </button>
@@ -134,7 +138,7 @@ const Header = ({ user, activeTab, setActiveTab, onLogout, onLoginClick }: any) 
             <button
               onClick={() => setActiveTab('shop')}
               className={`p-2.5 rounded-full transition-all duration-200 ${activeTab === 'shop' ? 'bg-secondary text-primary shadow-md' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}
-              title="Tienda de Puntos"
+              title={t('nav.shop')}
             >
               <ShoppingBag size={18} />
             </button>
@@ -189,9 +193,6 @@ const Header = ({ user, activeTab, setActiveTab, onLogout, onLoginClick }: any) 
                   )}
                 </div>
               </button>
-              <button onClick={() => setActiveTab('settings')} className="p-2.5 hover:bg-white/10 text-white/60 hover:text-white rounded-full transition" title="Ajustes">
-                <Settings size={18} />
-              </button>
             </>
           ) : (
             <button
@@ -208,6 +209,7 @@ const Header = ({ user, activeTab, setActiveTab, onLogout, onLoginClick }: any) 
 };
 
 const ReportForm = ({ onSubmit, onCancel }: { onSubmit: (data: Partial<Issue>) => void, onCancel: () => void }) => {
+  const { t } = useLocale();
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
   const [category, setCategory] = useState(IssueCategory.OTHER);
@@ -249,7 +251,7 @@ const ReportForm = ({ onSubmit, onCancel }: { onSubmit: (data: Partial<Issue>) =
           setLocating(false);
         },
         () => {
-          alert('No se pudo obtener la ubicación. Usando el centro de Sevilla por defecto.');
+          alert(t('report.geoloc_error') || 'No se pudo obtener la ubicación.');
           setLocation(SEVILLA_CENTER);
           setLocating(false);
         }
@@ -309,7 +311,7 @@ const ReportForm = ({ onSubmit, onCancel }: { onSubmit: (data: Partial<Issue>) =
       <form onSubmit={handleSubmit} className="space-y-6">
 
         <div>
-          <label className="block text-sm font-bold text-gray-700 dark:text-slate-200 mb-2">Fotografía</label>
+          <label className="block text-sm font-bold text-gray-700 dark:text-slate-200 mb-2">{t('report.photo')}</label>
           <div
             onClick={() => fileInputRef.current?.click()}
             onKeyDown={(e) => { if (e.key === 'Enter') fileInputRef.current?.click(); }}
@@ -324,7 +326,7 @@ const ReportForm = ({ onSubmit, onCancel }: { onSubmit: (data: Partial<Issue>) =
                   <span>{selectedFileName}</span>
                   <div className="flex items-center gap-3">
                     {evidenceStatus === 'validating' && (
-                      <span className="text-xs text-gray-500 dark:text-slate-300">Validando...</span>
+                      <span className="text-xs text-gray-500 dark:text-slate-300">{t('report.validating')}</span>
                     )}
                     {evidenceStatus === 'valid' && (
                       <span className="text-xs text-green-600 font-bold">✓ Evidencia válida ({(evidenceConfidence || 0).toFixed(2)})</span>
@@ -337,7 +339,7 @@ const ReportForm = ({ onSubmit, onCancel }: { onSubmit: (data: Partial<Issue>) =
                       onClick={(e) => { e.stopPropagation(); setPreviewUrl(null); setSelectedFileName(null); setEvidenceStatus('idle'); setEvidenceConfidence(null); setEvidenceReason(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
                       className="text-red-500 font-bold"
                     >
-                      Eliminar
+                      {t('report.delete')}
                     </button>
                   </div>
                 </div>
@@ -347,7 +349,7 @@ const ReportForm = ({ onSubmit, onCancel }: { onSubmit: (data: Partial<Issue>) =
               </div>
             ) : (
               <>
-                <span className="text-sm font-medium">Haz clic o arrastra una foto</span>
+                <span className="text-sm font-medium">{t('report.click_drag')}</span>
               </>
             )}
             <input
@@ -391,13 +393,13 @@ const ReportForm = ({ onSubmit, onCancel }: { onSubmit: (data: Partial<Issue>) =
         </div>
 
         <div>
-          <label className="block text-sm font-bold text-gray-700 dark:text-slate-200 mb-2">Descripción</label>
+          <label className="block text-sm font-bold text-gray-700 dark:text-slate-200 mb-2">{t('report.description')}</label>
           <div className="relative">
             <textarea
               value={desc}
               onChange={(e) => setDesc(e.target.value)}
               className="w-full p-4 border border-gray-300 dark:border-slate-700 rounded-xl focus:ring-4 focus:ring-primary/20 focus:border-primary transition h-32 outline-none resize-none bg-white dark:bg-slate-950/40 dark:text-slate-100"
-              placeholder="Describe el problema (ej. Farola rota en Alameda...)"
+              placeholder={t('report.desc_placeholder')}
               required
             />
             <button
@@ -407,47 +409,47 @@ const ReportForm = ({ onSubmit, onCancel }: { onSubmit: (data: Partial<Issue>) =
               className="absolute bottom-3 right-3 flex items-center gap-1.5 text-xs bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-lg font-bold hover:bg-indigo-100 transition disabled:opacity-50"
             >
               <Zap size={14} />
-              {isAnalyzing ? 'Analizando...' : 'IA Auto-completar'}
+              {isAnalyzing ? t('report.analyzing') : t('report.ai')}
             </button>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-bold text-gray-700 dark:text-slate-200 mb-2">Título</label>
+            <label className="block text-sm font-bold text-gray-700 dark:text-slate-200 mb-2">{t('report.title')}</label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="w-full p-3 border border-gray-300 dark:border-slate-700 rounded-xl focus:ring-4 focus:ring-primary/20 focus:border-primary outline-none transition bg-white dark:bg-slate-950/40 dark:text-slate-100"
-              placeholder="Título breve"
+              placeholder={t('report.title_placeholder')}
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-bold text-gray-700 dark:text-slate-200 mb-2">Categoría</label>
+            <label className="block text-sm font-bold text-gray-700 dark:text-slate-200 mb-2">{t('report.category')}</label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value as IssueCategory)}
               className="w-full p-3 border border-gray-300 dark:border-slate-700 rounded-xl focus:ring-4 focus:ring-primary/20 focus:border-primary outline-none transition bg-white dark:bg-slate-950/40 dark:text-slate-100"
             >
               {Object.values(IssueCategory).map(c => (
-                <option key={c} value={c}>{c}</option>
+                <option key={c} value={c}>{t(CATEGORY_KEYS[c] || 'cat.other')}</option>
               ))}
             </select>
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-bold text-gray-700 dark:text-slate-200 mb-2">Ubicación</label>
-          <p className="text-sm text-gray-600 dark:text-slate-300">Introduce la calle o detecta tu ubicación:</p>
+          <label className="block text-sm font-bold text-gray-700 dark:text-slate-200 mb-2">{t('report.location')}</label>
+          <p className="text-sm text-gray-600 dark:text-slate-300">{t('report.location_hint')}</p>
           <div className="relative mt-2">
             <input
               type="text"
               value={street}
               onChange={(e) => setStreet(e.target.value)}
               className="w-full p-3 border border-gray-300 dark:border-slate-700 rounded-xl focus:ring-4 focus:ring-primary/20 focus:border-primary outline-none transition bg-white dark:bg-slate-950/40 dark:text-slate-100"
-              placeholder="Escribe la calle..."
+              placeholder={t('report.street_placeholder')}
             />
             {suggestions.length > 0 && (
               <ul className="absolute z-10 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl shadow-lg mt-1 w-full">
@@ -467,23 +469,21 @@ const ReportForm = ({ onSubmit, onCancel }: { onSubmit: (data: Partial<Issue>) =
             type="button"
             onClick={handleGeolocation}
             className={`w-full p-4 mt-4 rounded-xl border-2 flex items-center justify-center gap-2 transition font-bold ${location
-                ? 'bg-green-50 border-green-200 text-green-700 dark:bg-emerald-950/25 dark:border-emerald-900/40 dark:text-emerald-300'
-                : 'bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 hover:border-gray-300 dark:hover:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-800/40'
+              ? 'bg-green-50 border-green-200 text-green-700 dark:bg-emerald-950/25 dark:border-emerald-900/40 dark:text-emerald-300'
+              : 'bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 hover:border-gray-300 dark:hover:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-800/40'
               }`}
           >
             <MapPin size={20} />
-            {locating ? 'Localizando...' : location ? `Ubicación detectada` : 'Detectar mi ubicación'}
+            {locating ? t('report.detecting') : location ? t('report.detected') : t('report.detect')}
           </button>
         </div>
 
-        {
-          location && (
-            <div className="mt-4">
-              <p className="text-sm text-gray-600 dark:text-slate-300">Ubicación seleccionada:</p>
-              <p className="text-sm font-bold text-gray-800 dark:text-slate-100">Latitud: {location.lat}, Longitud: {location.lng}</p>
-            </div>
-          )
-        }
+        {location && (
+          <div className="mt-4">
+            <p className="text-sm text-gray-600 dark:text-slate-300">{t('report.selected_location')}</p>
+            <p className="text-sm font-bold text-gray-800 dark:text-slate-100">{t('report.lat')} {location.lat}, {t('report.lng')} {location.lng}</p>
+          </div>
+        )}
 
         <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-gray-100 dark:border-slate-800">
           <button
@@ -491,13 +491,13 @@ const ReportForm = ({ onSubmit, onCancel }: { onSubmit: (data: Partial<Issue>) =
             onClick={onCancel}
             className="px-6 py-3 text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition font-bold"
           >
-            Cancelar
+            {t('report.cancel')}
           </button>
           <button
             type="submit"
             className="px-8 py-3 bg-primary text-white rounded-xl hover:bg-blue-900 transition font-bold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
           >
-            Enviar Reporte
+            {t('report.submit')}
           </button>
         </div>
       </form >
@@ -505,64 +505,77 @@ const ReportForm = ({ onSubmit, onCancel }: { onSubmit: (data: Partial<Issue>) =
   );
 };
 
-const IssueCard: FC<{
+interface IssueCardProps {
   issue: Issue;
   onClick: () => void;
   isAdmin?: boolean;
   onStatusChange?: (id: string, s: IssueStatus) => void;
-}> = ({ issue, onClick, isAdmin, onStatusChange }) => {
-  const getStatusColor = (s: IssueStatus) => {
-    switch (s) {
-      case IssueStatus.RESOLVED: return 'bg-teal-100 text-teal-800 border-teal-200';
-      case IssueStatus.IN_PROGRESS: return 'bg-amber-100 text-amber-800 border-amber-200';
-      default: return 'bg-rose-100 text-rose-800 border-rose-200';
-    }
-  };
+}
 
-  const getIcon = (s: IssueStatus) => {
-    switch (s) {
-      case IssueStatus.RESOLVED: return <CheckCircle size={14} />;
-      case IssueStatus.IN_PROGRESS: return <Clock size={14} />;
-      default: return <Info size={14} />;
-    }
-  }
+const IssueCard: React.FC<IssueCardProps> = ({ issue, onClick, isAdmin, onStatusChange }) => {
+  const { t } = useLocale();
 
-  return (
-    <div
-      onClick={onClick}
-      className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 overflow-hidden hover:shadow-xl transition-all duration-300 group cursor-pointer hover:-translate-y-1"
-    >
-      <div className="h-44 w-full bg-gray-200 dark:bg-slate-800 relative overflow-hidden">
-        <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition z-10"></div>
-        <img src={issue.imageUrl} alt={issue.title} className="w-full h-full object-cover transform group-hover:scale-110 transition duration-700" />
-        <span className={`absolute top-3 right-3 px-3 py-1.5 rounded-lg text-xs font-black flex items-center gap-1.5 border z-20 shadow-sm uppercase tracking-wide ${getStatusColor(issue.status)}`}>
-          {getIcon(issue.status)}
-          {issue.status}
-        </span>
-      </div>
-      <div className="p-5">
-        <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100 mb-2 group-hover:text-primary transition leading-tight">{issue.title}</h3>
-        <p className="text-gray-500 dark:text-slate-300 text-sm mb-4 line-clamp-2 leading-relaxed">{issue.description}</p>
+  try {
+    const getStatusColor = (s: IssueStatus) => {
+      switch (s) {
+        case IssueStatus.RESOLVED: return 'bg-teal-100 text-teal-800 border-teal-200';
+        case IssueStatus.IN_PROGRESS: return 'bg-amber-100 text-amber-800 border-amber-200';
+        default: return 'bg-rose-100 text-rose-800 border-rose-200';
+      }
+    };
 
-        <div className="flex justify-between items-center text-xs text-gray-400 dark:text-slate-400 border-t border-gray-50 dark:border-slate-800 pt-3">
-          <span className="bg-gray-100 dark:bg-slate-800 px-2 py-1 rounded text-gray-500 dark:text-slate-300 font-medium">{issue.category.split(' ')[0]}</span>
-          <span>{issue.createdAt}</span>
+    const getIcon = (s: IssueStatus) => {
+      switch (s) {
+        case IssueStatus.RESOLVED: return <CheckCircle size={14} className="stroke-[3]" />;
+        case IssueStatus.IN_PROGRESS: return <Clock size={14} className="stroke-[3]" />;
+        default: return <AlertTriangle size={14} className="stroke-[3]" />;
+      }
+    };
+
+    return (
+      <div
+        onClick={onClick}
+        className="bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-slate-800 cursor-pointer hover:shadow-md transition-all group animate-fade-in hover:border-primary/30"
+      >
+        <div className="relative h-40 rounded-xl overflow-hidden mb-4 bg-gray-100 dark:bg-slate-800">
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60 z-10" />
+          <img src={issue.imageUrl} alt={issue.title} className="w-full h-full object-cover transform group-hover:scale-110 transition duration-700" />
+          <span className={`absolute top-3 right-3 px-3 py-1.5 rounded-lg text-xs font-black flex items-center gap-1.5 border z-20 shadow-sm uppercase tracking-wide ${getStatusColor(issue.status)}`}>
+            {getIcon(issue.status)}
+            {t(STATUS_KEYS[issue.status] || 'status.pending')}
+          </span>
         </div>
+        <div className="p-5">
+          <h3 className="font-bold text-gray-800 dark:text-slate-100 text-lg mb-2 leading-tight group-hover:text-primary transition-colors line-clamp-1">
+            {issue.title}
+          </h3>
+          <p className="text-gray-500 dark:text-slate-300 text-sm mb-4 line-clamp-2 leading-relaxed">
+            {issue.description}
+          </p>
 
-        {isAdmin && onStatusChange && (
-          <div className="mt-4 pt-3 border-t border-gray-50 flex gap-2" onClick={(e) => e.stopPropagation()}>
-            <select
-              className="w-full text-xs p-2 border rounded-lg bg-gray-50 dark:bg-slate-800 border-gray-200 dark:border-slate-700 focus:ring-2 focus:ring-primary outline-none text-slate-800 dark:text-slate-100"
-              value={issue.status}
-              onChange={(e) => onStatusChange(issue.id, e.target.value as IssueStatus)}
-            >
-              {Object.values(IssueStatus).map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
+          <div className="flex justify-between items-center text-xs text-gray-400 dark:text-slate-400 border-t border-gray-50 dark:border-slate-800 pt-3">
+            <span className="bg-gray-100 dark:bg-slate-800 px-2 py-1 rounded text-gray-500 dark:text-slate-300 font-medium">{t(CATEGORY_KEYS[issue.category || ''] || 'cat.other')}</span>
+            <span>{issue.createdAt}</span>
           </div>
-        )}
+
+          {isAdmin && onStatusChange && (
+            <div className="mt-4 pt-3 border-t border-gray-50 flex gap-2" onClick={(e) => e.stopPropagation()}>
+              <select
+                className="w-full text-xs p-2 border rounded-lg bg-gray-50 dark:bg-slate-800 border-gray-200 dark:border-slate-700 focus:ring-2 focus:ring-primary outline-none text-slate-800 dark:text-slate-100"
+                value={issue.status}
+                onChange={(e) => onStatusChange(issue.id, e.target.value as IssueStatus)}
+              >
+                {Object.values(IssueStatus).map(s => <option key={s} value={s}>{t(STATUS_KEYS[s])}</option>)}
+              </select>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  } catch (err) {
+    console.error("Crash rendering IssueCard:", err);
+    return <div className="p-4 border border-red-200 text-red-500">Error rendering card</div>;
+  }
 }
 
 // --- Main App Component ---
@@ -570,9 +583,7 @@ const IssueCard: FC<{
 const App = () => {
   const [user, setUser] = useState<User | null>(getStoredUser());
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => getInitialThemeMode());
-  const [locale, setLocale] = useState<string>(() => {
-    try { return localStorage.getItem('locale') || 'es'; } catch { return 'es'; }
-  });
+  const { t } = useLocale();
   const [activeTab, setActiveTab] = useState<'home' | 'map' | 'create' | 'admin' | 'profile' | 'shop'>('home');
   const [issues, setIssues] = useState<Issue[]>([]);
 
@@ -718,14 +729,12 @@ const App = () => {
       const data = await res.json();
       if (!data.id) throw new Error('No session id returned');
 
-      // Load Stripe.js dynamically
+      // Redirect to Stripe Checkout using the session ID
       const { loadStripe } = await import('@stripe/stripe-js');
       const stripe = await loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || (window as any).STRIPE_PUBLISHABLE_KEY || '');
       if (!stripe) throw new Error('Stripe failed to load');
-      const result = await stripe.redirectToCheckout({ sessionId: data.id });
-      if ((result as any).error) {
-        alert((result as any).error.message || 'Error redirigiendo a pago');
-      }
+      // Use the modern Stripe API
+      await (stripe as any).redirectToCheckout({ sessionId: data.id });
     } catch (err: any) {
       console.error('Error iniciando checkout:', err);
       alert('No se pudo iniciar el pago: ' + (err.message || err));
@@ -800,33 +809,36 @@ const App = () => {
   });
 
   // Filter Bar Component
-  const FilterBar = () => (
-    <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 mb-6 flex flex-wrap gap-4 items-center animate-fade-in sticky top-20 z-30">
-      <div className="flex items-center gap-2 text-primary font-bold">
-        <Filter size={20} />
-        <span className="hidden sm:inline">Filtrar:</span>
+  const FilterBar = () => {
+    const { t } = useLocale();
+    return (
+      <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 mb-6 flex flex-wrap gap-4 items-center animate-fade-in sticky top-20 z-30">
+        <div className="flex items-center gap-2 text-primary font-bold">
+          <Filter size={20} />
+          <span className="hidden sm:inline">{t('map.filter')}</span>
+        </div>
+        <select
+          className="p-2 px-3 border border-gray-200 dark:border-slate-700 rounded-xl text-sm bg-gray-50 dark:bg-slate-800 focus:ring-2 focus:ring-primary outline-none text-slate-800 dark:text-slate-100"
+          value={filterCategory}
+          onChange={(e) => setFilterCategory(e.target.value)}
+        >
+          <option value="All">{t('map.all_categories')}</option>
+          {Object.values(IssueCategory).map(c => <option key={c} value={c}>{t(CATEGORY_KEYS[c] || 'cat.other')}</option>)}
+        </select>
+        <select
+          className="p-2 px-3 border border-gray-200 dark:border-slate-700 rounded-xl text-sm bg-gray-50 dark:bg-slate-800 focus:ring-2 focus:ring-primary outline-none text-slate-800 dark:text-slate-100"
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+        >
+          <option value="All">{t('map.all_statuses')}</option>
+          {Object.values(IssueStatus).map(s => <option key={s} value={s}>{t(STATUS_KEYS[s] || 'status.pending')}</option>)}
+        </select>
+        <div className="ml-auto text-sm text-gray-500 dark:text-slate-300 font-medium">
+          <strong>{filteredIssues.length}</strong> {t('map.results')}
+        </div>
       </div>
-      <select
-        className="p-2 px-3 border border-gray-200 dark:border-slate-700 rounded-xl text-sm bg-gray-50 dark:bg-slate-800 focus:ring-2 focus:ring-primary outline-none text-slate-800 dark:text-slate-100"
-        value={filterCategory}
-        onChange={(e) => setFilterCategory(e.target.value)}
-      >
-        <option value="All">Todas las Categorías</option>
-        {Object.values(IssueCategory).map(c => <option key={c} value={c}>{c}</option>)}
-      </select>
-      <select
-        className="p-2 px-3 border border-gray-200 dark:border-slate-700 rounded-xl text-sm bg-gray-50 dark:bg-slate-800 focus:ring-2 focus:ring-primary outline-none text-slate-800 dark:text-slate-100"
-        value={filterStatus}
-        onChange={(e) => setFilterStatus(e.target.value)}
-      >
-        <option value="All">Todos los Estados</option>
-        {Object.values(IssueStatus).map(s => <option key={s} value={s}>{s}</option>)}
-      </select>
-      <div className="ml-auto text-sm text-gray-500 dark:text-slate-300 font-medium">
-        <strong>{filteredIssues.length}</strong> resultados
-      </div>
-    </div>
-  );
+    );
+  };
 
   // Las funciones saveUserProfile y saveReport ahora usan la API REST de MongoDB
   const saveUserProfile = async (user: User) => {
@@ -898,18 +910,19 @@ const App = () => {
               {/* Sidebar List - Left side */}
               <div className="w-full md:w-1/3 lg:w-[380px] overflow-y-auto pr-2 space-y-4 pb-4 order-2 md:order-1 custom-scrollbar">
                 {filteredIssues.map(issue => (
-                  <IssueCard
-                    key={issue.id}
-                    issue={issue}
-                    onClick={() => setSelectedIssue(issue)}
-                    isAdmin={user?.role === UserRole.ADMIN}
-                    onStatusChange={handleStatusChange}
-                  />
+                  <div key={issue.id}>
+                    <IssueCard
+                      issue={issue}
+                      onClick={() => setSelectedIssue(issue)}
+                      isAdmin={user?.role === UserRole.ADMIN}
+                      onStatusChange={handleStatusChange}
+                    />
+                  </div>
                 ))}
                 {filteredIssues.length === 0 && (
                   <div className="p-12 text-center text-gray-400 dark:text-slate-400 bg-white dark:bg-slate-900 rounded-3xl border-2 border-dashed border-gray-200 dark:border-slate-700 flex flex-col items-center">
                     <Search size={40} className="mb-3 opacity-20" />
-                    <p>No hay incidencias.</p>
+                    <p>{t('general.no_issues')}</p>
                   </div>
                 )}
               </div>
@@ -924,10 +937,10 @@ const App = () => {
 
                 {/* Map Overlay Legend */}
                 <div className="absolute bottom-6 left-6 bg-white/95 dark:bg-slate-900/90 backdrop-blur-md p-4 rounded-2xl shadow-xl text-xs space-y-2 z-[400] border border-gray-100 dark:border-slate-700">
-                  <div className="font-bold text-gray-500 dark:text-slate-300 uppercase tracking-wider mb-2">Leyenda</div>
-                  <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#EF4444] shadow-sm"></div>Pendiente</div>
-                  <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#F59E0B] shadow-sm"></div>En Proceso</div>
-                  <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#48C9B0] shadow-sm"></div>Resuelto</div>
+                  <div className="font-bold text-gray-500 dark:text-slate-300 uppercase tracking-wider mb-2">{t('map.legend')}</div>
+                  <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#EF4444] shadow-sm"></div>{t('map.pending')}</div>
+                  <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#F59E0B] shadow-sm"></div>{t('map.in_progress')}</div>
+                  <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#48C9B0] shadow-sm"></div>{t('map.resolved')}</div>
                 </div>
               </div>
             </div>
@@ -946,21 +959,13 @@ const App = () => {
         )}
 
         {activeTab === 'profile' && user && (
-          <ProfilePanel
+          <ProfileSettingsPanel
             user={user}
             issues={issues}
             onUpdateUser={handleUpdateUser}
-          />
-        )}
-
-        {activeTab === 'settings' && (
-          <SettingsPanel
-            user={user}
             onLogout={handleLogout}
             themeMode={themeMode}
             onThemeModeChange={setThemeMode}
-            locale={locale}
-            onLocaleChange={(l) => { setLocale(l); try { localStorage.setItem('locale', l); } catch { } }}
           />
         )}
 
@@ -979,8 +984,8 @@ const App = () => {
             <div className="bg-gray-100 dark:bg-slate-800 p-6 rounded-full mb-4">
               <Info size={48} className="text-gray-300" />
             </div>
-            <h3 className="text-2xl font-black text-gray-700 dark:text-slate-100">Acceso Restringido</h3>
-            <p>Solo personal autorizado del Ayuntamiento.</p>
+            <h3 className="text-2xl font-black text-gray-700 dark:text-slate-100">{t('access.denied')}</h3>
+            <p>{t('access.admin_only')}</p>
           </div>
         )}
       </main>

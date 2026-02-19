@@ -1,7 +1,23 @@
 import React, { useEffect, useRef } from 'react';
 import L from 'leaflet';
-import { Issue, IssueStatus } from '../types';
+import { Issue, IssueCategory, IssueStatus, UserRole } from '../types';
 import { SEVILLA_CENTER } from '../constants';
+import { useLocale } from '../i18n';
+
+const CATEGORY_KEYS: Record<string, string> = {
+  [IssueCategory.INFRASTRUCTURE]: 'cat.infra',
+  [IssueCategory.LIGHTING]: 'cat.lighting',
+  [IssueCategory.CLEANING]: 'cat.cleaning',
+  [IssueCategory.NOISE]: 'cat.noise',
+  [IssueCategory.PARKS]: 'cat.parks',
+  [IssueCategory.OTHER]: 'cat.other'
+};
+
+const STATUS_KEYS: Record<string, string> = {
+  [IssueStatus.PENDING]: 'status.pending',
+  [IssueStatus.IN_PROGRESS]: 'status.in_progress',
+  [IssueStatus.RESOLVED]: 'status.resolved'
+};
 
 interface IssueMapProps {
   issues: Issue[];
@@ -10,6 +26,7 @@ interface IssueMapProps {
 }
 
 const IssueMap: React.FC<IssueMapProps> = ({ issues, onSelectIssue, focusedIssue }) => {
+  const { t } = useLocale();
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<L.Marker[]>([]);
@@ -80,10 +97,10 @@ const IssueMap: React.FC<IssueMapProps> = ({ issues, onSelectIssue, focusedIssue
               ${issue.title}
             </h3>
             <p style="margin: 0 0 8px 0; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: ${isDark ? '#cbd5e1' : '#6b7280'};">
-              ${issue.category}
+              ${t(CATEGORY_KEYS[issue.category || ''] || 'cat.other')}
             </p>
             <span style="display: inline-block; padding: 4px 8px; border-radius: 9999px; font-size: 11px; color: white; font-weight: 800; background-color: ${color}">
-              ${issue.status}
+              ${t(STATUS_KEYS[issue.status] || 'status.pending')}
             </span>
             ${issue.imageUrl ? `<div style="margin-top: 10px; border-radius: 8px; overflow: hidden; height: 96px; width: 100%; background: ${isDark ? 'rgba(148,163,184,0.12)' : '#f3f4f6'};"><img src="${issue.imageUrl}" style="width:100%; height:100%; object-fit:cover;" /></div>` : ''}
           </div>

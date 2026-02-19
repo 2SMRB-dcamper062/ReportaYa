@@ -34,7 +34,8 @@ try {
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017';
 const DB_NAME = process.env.DB_NAME || 'reportaya';
-const PORT = process.env.API_PORT || 3001;
+const IS_PROD = process.env.NODE_ENV === 'production';
+const PORT = process.env.API_PORT || (IS_PROD ? 3000 : 3001);
 
 const app = express();
 

@@ -7,7 +7,7 @@ import { User, Issue, UserRole } from '../types';
 import { MOCK_ISSUES } from '../constants';
 
 // --- API CONFIGURATION ---
-const API_BASE_URL = 'http://localhost:3001/api';
+const API_BASE_URL = '/api';
 const SESSION_KEY = 'currentUser';
 
 // Helper for API calls

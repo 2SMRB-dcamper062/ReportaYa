@@ -1,15 +1,5 @@
-declare module 'react' {
-    const React: any;
-    export default React;
-    export const useEffect: any;
-    export const useRef: any;
-    export const useState: any;
-    export const useMemo: any;
-    export const useCallback: any;
-    export type FC<P = {}> = any;
-    export type ReactNode = any;
-    export type RefObject<T> = any;
-}
+// React types come from @types/react - no override needed
+
 
 declare module 'react-dom/client' {
     export const createRoot: any;
@@ -70,6 +60,11 @@ declare module 'lucide-react' {
     export const Map: any;
     export const Layers: any;
     export const Activity: any;
+    export const Moon: any;
+    export const Sun: any;
+    export const SunMoon: any;
+    export const Globe: any;
+    export const Languages: any;
 }
 
 declare module 'recharts' {

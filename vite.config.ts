@@ -6,11 +6,18 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
   return {
     server: {
-      allowedHosts: true,
       port: 3000,
-      strictPort: true,
-      host: '0.0.0.0',
-
+      strictPort: false,
+      proxy: {
+        '/api': {
+          target: 'http://localhost:3001',
+          changeOrigin: true,
+        },
+        '/create-checkout-session': {
+          target: 'http://localhost:3001',
+          changeOrigin: true,
+        },
+      },
     },
     plugins: [react()],
     define: {
