@@ -1,3 +1,4 @@
+// ReportaYa - App Main Component
 import React, { useState, useEffect, useRef } from 'react';
 import type { FC } from 'react';
 import { UserRole, Issue, IssueStatus, IssueCategory, User, ShopItem } from './types';
