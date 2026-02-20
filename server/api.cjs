@@ -700,7 +700,7 @@ connectDB()
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 API activa en puerto ${PORT}`);
       console.log(`📋 API endpoints listos para recibir peticiones`);
-      console.log(`🌐 Acceso Web: http://${process.env.DOMAIN || 'localhost'}`);
+      console.log(`🌐 Acceso Web: ${process.env.DOMAIN || 'http://localhost:3000'}`);
     });
   })
   .catch(err => {
