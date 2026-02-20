@@ -1,11 +1,12 @@
 #!/bin/bash
 
 # ====================================================
-# 🚀 REPORTAYA - SISTEMA DE CONTROL (V3.7)
+# 🚀 REPORTAYA - SISTEMA DE CONTROL (V3.8)
 # ====================================================
 
-# Limpieza total de pantalla al inicio
+# Limpieza total de pantalla y reset de terminal para evitar el efecto "escalera"
 clear
+reset 2>/dev/null || tput reset 2>/dev/null
 
 # Función para cerrar todo al pulsar Ctrl+C
 trap 'echo ""; echo "🛑 Apagando ReportaYa..."; sudo fuser -k 3000/tcp 3001/tcp 27017/tcp 2>/dev/null; exit' SIGINT SIGTERM
@@ -14,22 +15,25 @@ echo "----------------------------------------------------"
 echo "🔧 INICIANDO REPORTAYA"
 echo "----------------------------------------------------"
 
-# 1. Limpieza de procesos y carpetas conflictivas
-echo "[1/6] Liberando puertos y archivos temporales..."
-sudo fuser -k 3000/tcp 3001/tcp 27017/tcp >/dev/null 2>&1
-sudo pkill -9 -f node >/dev/null 2>&1
-sudo pkill -9 -f mongod >/dev/null 2>&1
-sudo pkill -9 -f vite >/dev/null 2>&1
+# 1. Limpieza AGRESIVA de procesos y carpetas
+echo "[1/6] Limpiando procesos y bloqueos de archivos..."
+{
+  sudo fuser -k 3001/tcp 3000/tcp 27017/tcp
+  sudo pkill -9 -f node
+  sudo pkill -9 -f mongod
+  sudo pkill -9 -f vite
+} >/dev/null 2>&1
 
-# Eliminar carpetas que causan el error EACCES de Vite
-sudo rm -rf node_modules/.vite >/dev/null 2>&1
-sudo rm -rf node_modules/.vite-temp >/dev/null 2>&1
+# Eliminar carpetas de cache de Vite (CAUSA DEL ERROR EACCES)
+sudo rm -rf node_modules/.vite* >/dev/null 2>&1
 sudo rm -f /tmp/mongodb-27017.sock >/dev/null 2>&1
 
-# 2. Permisos (Crucial para evitar EACCES)
-echo "[2/6] Restaurando propiedad de los archivos..."
+# 2. Permisos TOTALES
+echo "[2/6] Corrigiendo permisos (Solución EACCES)..."
 sudo chown -R $USER:$USER .
-sudo chmod -R 755 .
+# Damos permisos de escritura total a node_modules para que Vite no falle
+sudo chmod -R 777 node_modules 2>/dev/null || true
+chmod -R 755 . 2>/dev/null
 
 # 3. Configuración (.env)
 echo "[3/6] Sincronizando configuración (.env)..."
@@ -53,21 +57,23 @@ sleep 1
 # 5. Dependencias
 echo "[5/6] Verificando dependencias..."
 if [ ! -d "node_modules" ]; then
-    echo "📦 Instalando librerías (esto puede tardar)..."
+    echo "📦 Instalando librerías..."
     npm install --quiet
 fi
 
 # 6. Lanzamiento
-echo "[6/6] Preparando arranque..."
-echo "✅ Gmail Conectado: soporte.reportaya@gmail.com"
+echo "[6/6] Preparando arranque final..."
+echo "✅ Servidor de Correo: soporte.reportaya@gmail.com"
 
 echo "----------------------------------------------------"
 echo "🚀 REPORTAYA LISTO EN: http://$PUBLIC_IP:3000"
 echo "Pulsa Ctrl+C para apagar el sistema"
 echo "----------------------------------------------------"
 
-# Lanzamiento en modo RAW para evitar problemas de alineación de 'concurrently'
-# Ejecutamos con --raw para que no añada prefijos que rompen el diseño de la consola
-npx concurrently --raw --kill-others \
+# Usamos concurrently con prefijos cortos pero sin --raw para mantener el orden de las líneas
+# Si el efecto escalera persiste, intentaremos sin concurrently.
+npx concurrently --kill-others \
+  -n API,WEB \
+  -c "bgCyan.bold,bgMagenta.bold" \
   "cross-env PORT=3001 node server/api.cjs" \
   "npx vite --port 3000 --host 0.0.0.0 --clearScreen false"
