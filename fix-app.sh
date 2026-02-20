@@ -72,4 +72,4 @@ echo "Starting the application now..."
 echo "===================================================="
 
 # 8. Start Application
-npm run dev
+npm run dev:server

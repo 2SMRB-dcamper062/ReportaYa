@@ -6,6 +6,7 @@
   "scripts": {
     "start": "concurrently -n MONGO,API,VITE -c green,cyan,magenta \"mongod\" \"cross-env PORT=3001 node server/api.cjs\" \"vite --port 3000 --host\"",
     "dev": "concurrently -n MONGO,API,VITE -c green,cyan,magenta \"mongod\" \"cross-env PORT=3001 node server/api.cjs\" \"vite --port 3000 --host\"",
+    "dev:server": "concurrently -n API,VITE -c cyan,magenta \"cross-env PORT=3001 node server/api.cjs\" \"vite --port 3000 --host\"",
     "dev:api": "node server/api.cjs",
     "dev:vite": "vite",
     "build": "vite build",
