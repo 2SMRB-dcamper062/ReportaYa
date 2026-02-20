@@ -30,17 +30,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onClose }) => {
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Check for reset token on mount
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get('reset');
-    if (token) {
-      setResetToken(token);
-      setView('reset');
-      // Clean URL
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-  }, []);
+  // URL reset detection removed, handled in App.tsx
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -6,6 +6,7 @@ import IssueMap from './components/IssueMapView';
 import StatsPanel from './components/StatsPanel';
 import LandingPage from './components/LandingPage';
 import AuthScreen from './components/AuthScreen';
+import ResetPasswordPage from './components/ResetPasswordPage';
 import ProfileSettingsPanel from './components/ProfileSettingsPanel';
 import ShopPanel from './components/ShopPanel';
 import IssueDetailModal from './components/IssueDetailModal';
@@ -663,7 +664,8 @@ const App = () => {
   const [user, setUser] = useState<User | null>(getStoredUser());
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => getInitialThemeMode());
   const { t } = useLocale();
-  const [activeTab, setActiveTab] = useState<'home' | 'map' | 'create' | 'admin' | 'profile' | 'shop'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'map' | 'create' | 'admin' | 'profile' | 'shop' | 'reset-password'>('home');
+  const [resetToken, setResetToken] = useState<string | null>(null);
   const [issues, setIssues] = useState<Issue[]>([]);
 
   // Apply theme globally (Tailwind dark mode uses the "dark" class)
@@ -694,6 +696,18 @@ const App = () => {
           localStorage.setItem('currentUser', JSON.stringify(fresh));
         }
       }).catch(err => console.warn('No se pudo refrescar la sesión del servidor:', err));
+    }
+  }, []);
+
+  // Check for reset token from URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('reset');
+    if (token) {
+      setResetToken(token);
+      setActiveTab('reset-password');
+      // Clean URL to avoid re-triggering and keeping token in bar
+      window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
 
@@ -1093,6 +1107,17 @@ const App = () => {
             onPurchase={handleShopPurchase}
             onEquip={handleEquipItem}
             onBuyPremium={handleBuyPremium}
+          />
+        )}
+
+        {activeTab === 'reset-password' && resetToken && (
+          <ResetPasswordPage
+            token={resetToken}
+            onSuccess={() => {
+              setResetToken(null);
+              setActiveTab('home');
+              setAuthModalOpen(true);
+            }}
           />
         )}
 

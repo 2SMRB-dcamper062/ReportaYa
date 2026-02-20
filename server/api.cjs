@@ -485,7 +485,6 @@ app.post('/api/users/forgot-password', async (req, res) => {
           <a href="${resetUrl}" style="background:#1e3a5f;color:white;padding:12px 30px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block;">Restablecer Contraseña</a>
         </p>
         <p style="color:#888;font-size:12px;">Este enlace expira en 1 hora. Si no solicitaste este cambio, ignora este mensaje.</p>
-        <p style="color:#aaa;font-size:11px;">URL directa: ${resetUrl}</p>
         <hr style="border:none;border-top:1px solid #eee;">
         <p style="color:#aaa;font-size:11px;">ReportaYa — La plataforma ciudadana de Sevilla</p>
       </div>
