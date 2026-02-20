@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "===================================================="
-echo "🔧 SECUENCIA DE REPARACIÓN FINAL (V2.2)"
+echo "🔧 SECUENCIA DE REPARACIÓN NUCLEAR (V2.4)"
 echo "===================================================="
 
 # 1. Limpieza total de procesos y bloqueos
@@ -14,18 +14,20 @@ sudo rm -f /tmp/mongodb-27017.sock
 sudo rm -f /var/lib/mongodb/mongod.lock
 
 # 2. Arreglo de Permisos y Limpieza de Temporales
-echo "🔐 Recuperando propiedad del usuario ubuntu..."
+echo "🔐 Reparando permisos del sistema..."
 sudo chown -R $USER:$USER .
 sudo chmod -R 755 .
-rm -rf node_modules/.vite node_modules/.vite-temp dist
+sudo rm -rf node_modules
+sudo rm -rf dist
 
-# 3. Instalación de Dependencias (FUNDAMENTAL)
-echo "📦 Instalando librerías (esto tardará unos 2 min)..."
-npm install --no-audit --no-fund
+# 3. INSTALACIÓN MANUAL FORZADA (ESTO ES LO QUE TE FALLABA)
+echo "📦 INSTALACIÓN MANUAL FORZADA ( Tardará 2-3 min )..."
+npm install --no-audit --no-fund || { echo "❌ ERROR: No se pudieron instalar las librerías. Revisa tu internet."; exit 1; }
+echo "✅ Librerías instaladas correctamente."
 
 # 4. Configuración OFICIAL de Correo y Red
 PUBLIC_IP=$(curl -s ifconfig.me || echo "127.0.0.1")
-echo "📝 Configurando .env con SMTP Soporte..."
+echo "📝 Escribiendo configuración oficial en .env..."
 cat <<EOT > .env
 MONGO_URI=mongodb://127.0.0.1:27017/reportaya
 DB_NAME=reportaya
@@ -48,13 +50,13 @@ if ! pgrep -x "mongod" > /dev/null; then
 fi
 
 # 6. Sincronización y Compilación
-echo "🌱 Poblado de usuarios..."
-npm run seed:users
-echo "🏗️ Generando archivos de producción..."
-npm run build
+echo "🌱 Poblando datos..."
+node server/seed_users.cjs || echo "⚠️ Falló el seeding, pero continuamos..."
+echo "🏗️ Compilando Frontend oficial..."
+./node_modules/.bin/vite build || npx vite build
 
 echo "===================================================="
 echo "🚀 SISTEMA REAL PUBLICADO CON ÉXITO"
 echo "===================================================="
-# Usamos el comando directo para evitar fallos de scripts en package.json
+# Usamos npx para asegurar que lance aunque no esté en el PATH
 npx concurrently -n API,VITE -c cyan,magenta "cross-env PORT=3001 node server/api.cjs" "npx vite --port 3000 --host 0.0.0.0"

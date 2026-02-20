@@ -70,7 +70,9 @@ async function initEmail() {
     if (process.env.SMTP_HOST) {
       transportConfig.host = process.env.SMTP_HOST;
       transportConfig.port = parseInt(process.env.SMTP_PORT || '587');
-      console.log(`📡 SMTP Config: Host=${transportConfig.host}, Port=${transportConfig.port}`);
+      // Si el puerto es 465, activamos SSL automáticamente
+      transportConfig.secure = transportConfig.port === 465;
+      console.log(`📡 SMTP Config: Host=${transportConfig.host}, Port=${transportConfig.port}, Secure=${transportConfig.secure}`);
     } else {
       transportConfig.service = process.env.SMTP_SERVICE || 'gmail';
       console.log(`📡 SMTP Config: Service=${transportConfig.service}`);
