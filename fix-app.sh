@@ -15,6 +15,10 @@ echo "----------------------------------------------------"
 echo "🔧 ARRANCANDO REPORTAYA"
 echo "----------------------------------------------------"
 
+# 0. Asegurar propiedad (Fix radical para EACCES)
+echo "🔒 Verificando propiedad de archivos..."
+sudo chown -R $USER:$USER /home/ubuntu/ReportaYa 2>/dev/null || sudo chown -R $USER:$USER .
+
 # 1. Limpieza de procesos y carpetas conflictivas
 echo "[1/4] Liberando puertos y limpiando temporales..."
 sudo fuser -k 3000/tcp 3001/tcp 27017/tcp >/dev/null 2>&1
@@ -22,9 +26,9 @@ sudo pkill -9 -f node >/dev/null 2>&1
 sudo pkill -9 -f vite >/dev/null 2>&1
 
 # Solución EACCES definitiva
-echo "🧹 Limpiando cachés de Vite..."
-sudo rm -rf node_modules/.vite >/dev/null 2>&1
-sudo rm -rf node_modules/.vite-temp >/dev/null 2>&1
+echo "🧹 Limpiando cachés y temporales de Vite..."
+sudo rm -rf node_modules/.vite node_modules/.vite-temp .vite_cache >/dev/null 2>&1
+sudo find node_modules -name ".vite*" -exec rm -rf {} + >/dev/null 2>&1
 
 # 2. Restaurar permisos al usuario real
 echo "[2/4] Corrigiendo permisos de archivos..."
@@ -66,6 +70,7 @@ echo "🚀 REPORTAYA LISTO EN: http://$(curl -s ifconfig.me):3000"
 echo "📧 Sistema de correos ACTIVO"
 echo "----------------------------------------------------"
 
+# Forzamos a Vite a usar una carpeta de caché nueva y limpia fuera de node_modules
 npx -y concurrently --raw --kill-others \
   "PORT=3001 node server/api.cjs" \
-  "npx -y vite --port 3000 --host 0.0.0.0 --clearScreen false"
+  "cross-env VITE_CACHE_DIR=./.vite_cache npx -y vite --port 3000 --host 0.0.0.0 --clearScreen false --force"
