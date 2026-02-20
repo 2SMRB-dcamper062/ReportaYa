@@ -36,4 +36,4 @@ fi
 
 # 7. Start Server
 echo "🚀 STARTING SERVER ON PORT 3000..."
-npm start
+npm run dev
