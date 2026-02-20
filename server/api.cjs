@@ -84,7 +84,7 @@ function validatePasswordStrength(password) {
 
 const crypto = require('crypto');
 
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017';
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017';
 const DB_NAME = process.env.DB_NAME || 'reportaya';
 const IS_PROD = process.env.NODE_ENV === 'production';
 const PORT = process.env.PORT || 3000;
@@ -268,7 +268,7 @@ app.post('/api/users/register', async (req, res) => {
     await db.collection('users').insertOne(userProfile);
     console.log('✅ User inserted into DB:', userId);
 
-    // Send welcome email
+    console.log('   Sending welcome email (background)...');
     sendEmail(email, '¡Bienvenido a ReportaYa!', `
       <div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:20px;">
         <h1 style="color:#1e3a5f;">¡Bienvenido a ReportaYa! 🎉</h1>
