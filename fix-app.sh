@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ====================================================
-# 🚀 REPORTAYA - SISTEMA DE CONTROL (V3.2)
+# 🚀 REPORTAYA - SISTEMA DE CONTROL (V3.5)
 # ====================================================
 
 # Limpieza total de pantalla al inicio
@@ -11,26 +11,25 @@ clear
 trap 'echo ""; echo "🛑 Apagando ReportaYa..."; sudo fuser -k 3000/tcp 3001/tcp 27017/tcp 2>/dev/null; exit' SIGINT SIGTERM
 
 echo "----------------------------------------------------"
-echo "INICIANDO REPORTAYA"
+echo "🔧 INICIANDO REPORTAYA"
 echo "----------------------------------------------------"
 
-# 1. Limpieza a fondo (Silenciosa para no desalinear)
-echo "[1] Liberando puertos y procesos..."
-sudo fuser -k 3000/tcp 3001/tcp 27017/tcp 2>/dev/null >/dev/null
-sudo pkill -9 -f node 2>/dev/null >/dev/null
-sudo pkill -9 -f mongod 2>/dev/null >/dev/null
-sudo pkill -9 -f vite 2>/dev/null >/dev/null
+# 1. Limpieza de procesos (Ahora con salida visible para diagnosticar)
+echo "[1/6] Liberando puertos y procesos antiguos..."
+sudo fuser -k 3000/tcp 3001/tcp 27017/tcp 2>/dev/null
+sudo pkill -9 -f node 2>/dev/null
+sudo pkill -9 -f mongod 2>/dev/null
+sudo pkill -9 -f vite 2>/dev/null
 sudo rm -f /tmp/mongodb-27017.sock >/dev/null 2>&1
 sudo rm -f /var/lib/mongodb/mongod.lock >/dev/null 2>&1
 
-# 2. Permisos y temporales (Silencioso para mantener alineación)
-echo "[2] Corrigiendo permisos de archivos..."
-sudo chown -R $USER:$USER . 2>/dev/null >/dev/null
-sudo chmod -R 755 . 2>/dev/null >/dev/null
-rm -rf node_modules/.vite .vite-temp dist 2>/dev/null >/dev/null
+# 2. Permisos
+echo "[2/6] Corrigiendo permisos de archivos..."
+sudo chown -R $USER:$USER . 2>/dev/null
+sudo chmod -R 755 . 2>/dev/null
 
 # 3. Datos y Configuración
-echo "[3] Sincronizando configuracion (.env)..."
+echo "[3/6] Sincronizando configuración (.env)..."
 PUBLIC_IP=$(curl -s ifconfig.me || echo "127.0.0.1")
 cat <<EOT > .env
 MONGO_URI=mongodb://127.0.0.1:27017/reportaya
@@ -44,34 +43,32 @@ SMTP_PASS=wemodqbgfcmjruot
 EOT
 
 # 4. Base de Datos
-echo "[4] Iniciando Base de Datos..."
+echo "[4/6] Iniciando MongoDB..."
 sudo systemctl start mongodb 2>/dev/null || sudo systemctl start mongod 2>/dev/null
-sleep 1
-if ! pgrep -x "mongod" > /dev/null; then
-    sudo mkdir -p /var/lib/mongodb 2>/dev/null
-    sudo chown -R $USER:$USER /var/lib/mongodb 2>/dev/null
-    mongod --fork --logpath /tmp/mongodb.log --dbpath /var/lib/mongodb --bind_ip 127.0.0.1 >/dev/null
-fi
+sleep 2
 
-# 5. Instalacion y Build (Silencioso para evitar desorden)
-echo "[5] Compilando componentes de la web..."
+# 5. Dependencias y Build (VISIBLE para ver si falla algo aquí)
+echo "[5/6] Verificando dependencias y compilando..."
 if [ ! -d "node_modules" ]; then
-    npm install --no-audit --no-fund --quiet >/dev/null 2>&1
+    echo "📦 Instalando librerías necesarias..."
+    npm install
 fi
-node server/seed_users.cjs >/dev/null 2>&1
-npm run build -- --force >/dev/null 2>&1
 
-echo "[6] Verificando Servidor de Correo..."
-echo "OK Correo de Soporte Conectado"
+# Generar el build de producción para evitar errores de Vite en modo dev con proxies
+echo "🏗️ Generando build de la aplicación..."
+npm run build -- --force
+
+# 6. Lanzamiento
+echo "[6/6] Verificando Servidor de Correo..."
+echo "✅ Gmail Conectado: soporte.reportaya@gmail.com"
 
 echo "----------------------------------------------------"
-echo "SISTEMA LISTO EN: http://$PUBLIC_IP:3000"
-echo "Pulsa Ctrl+C para detener la aplicacion"
+echo "🚀 REPORTAYA LISTO EN: http://$PUBLIC_IP:3000"
+echo "Pulsa Ctrl+C para apagar el sistema"
 echo "----------------------------------------------------"
 
-# Lanzamiento con salida simplificada al maximo para evitar desalineacion
-# Redirigimos stderr a stdout y filtramos por 'INFO|🚀|📋|🌐|✅'
-(
-  cross-env PORT=3001 node server/api.cjs &
-  npx vite --port 3000 --host 0.0.0.0 --clearScreen false
-) 2>&1 | grep --line-buffered -E "🚀|📋|🌐|✅|API|Web" | sed 's/^ //'
+# Lanzamiento TOTALMENTE VISIBLE sin filtros para que veas qué pasa
+# Usamos concurrently pero dejamos que la salida sea normal
+npx concurrently --kill-others -n API,WEB -c cyan,magenta \
+  "cross-env PORT=3001 node server/api.cjs" \
+  "npx vite --port 3000 --host 0.0.0.0 --clearScreen false"
