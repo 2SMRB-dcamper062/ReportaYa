@@ -85,7 +85,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onClose }) => {
       }
     } catch (err: any) {
       console.error('Auth error:', err);
-      setError(err.message || t('auth.error'));
+      setError(`Error: ${err.message}`);
     } finally {
       setLoading(false);
     }

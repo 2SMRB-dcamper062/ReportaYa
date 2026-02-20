@@ -110,6 +110,10 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' })); // Reduced limit for security
+app.use((req, res, next) => {
+  console.log(`📡 [${new Date().toISOString()}] ${req.method} ${req.url}`);
+  next();
+});
 app.use(express.static(path.join(__dirname, '../dist')));
 
 let db;
@@ -257,8 +261,8 @@ app.post('/api/users/register', async (req, res) => {
     };
 
     if (bcrypt) {
-      console.log('   Hashing password...');
-      userProfile.passwordHash = await bcrypt.hash(password, 10);
+      console.log('   Hashing password (cost 8)...');
+      userProfile.passwordHash = await bcrypt.hash(password, 8); // Reduced cost for speed
       console.log('   Password hashed.');
     } else {
       console.error('❌ Error: bcryptjs no está disponible.');
