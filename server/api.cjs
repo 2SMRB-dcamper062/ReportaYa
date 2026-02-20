@@ -102,8 +102,7 @@ const crypto = require('crypto');
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017';
 const DB_NAME = process.env.DB_NAME || 'reportaya';
-const IS_PROD = process.env.NODE_ENV === 'production';
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 
 const app = express();
 
