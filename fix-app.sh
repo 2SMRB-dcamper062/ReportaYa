@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "===================================================="
-echo "🔧 SECUENCIA DE REPARACIÓN TOTAL (V2.0)"
+echo "🔧 SECUENCIA DE REPARACIÓN TOTAL (V2.1)"
 echo "===================================================="
 
 # 1. Limpieza de procesos y archivos de bloqueo
@@ -15,16 +15,16 @@ sudo pkill -9 -f vite 2>/dev/null
 sudo rm -f /tmp/mongodb-27017.sock
 sudo rm -f /var/lib/mongodb/mongod.lock
 
-# Limpiar temporales de Vite que causan EACCES
-sudo rm -rf node_modules/.vite
-sudo rm -rf node_modules/.vite-temp
-
 # 2. Arreglar permisos de raíz
 echo "🔐 Reparando permisos de la carpeta..."
 sudo chown -R $USER:$USER .
 sudo chmod -R 755 .
 
-# 3. Configuración forzada de Mailtrap y Red
+# 3. Instalación de dependencias (CRÍTICO)
+echo "📦 Instalando librerías del sistema (esto tardará un poco)..."
+npm install --no-audit --no-fund
+
+# 4. Configuración forzada de Mailtrap y Red
 PUBLIC_IP=$(curl -s ifconfig.me || echo "127.0.0.1")
 echo "📝 Escribiendo configuración en .env..."
 cat <<EOT > .env
@@ -38,7 +38,7 @@ SMTP_USER=39d905339322c9
 SMTP_PASS=99e486dd618da5
 EOT
 
-# 4. Iniciar MongoDB y esperar respuesta real
+# 5. Iniciar MongoDB
 echo "🍃 Despertando base de datos..."
 sudo systemctl start mongodb 2>/dev/null || sudo systemctl start mongod 2>/dev/null
 sleep 2
@@ -48,9 +48,8 @@ if ! pgrep -x "mongod" > /dev/null; then
     mongod --fork --logpath /tmp/mongodb.log --dbpath /var/lib/mongodb --bind_ip 127.0.0.1
 fi
 
-# Esperar a que MongoDB responda (Ping)
-echo "⏳ Esperando a MongoDB..."
-for i in {1..15}; do
+# Esperar a que MongoDB responda
+for i in {1..10}; do
     if (mongosh --eval "db.adminCommand('ping')" --quiet &>/dev/null || mongo --eval "db.adminCommand('ping')" --quiet &>/dev/null); then
         echo "✅ MongoDB ONLINE."
         break
@@ -58,14 +57,13 @@ for i in {1..15}; do
     sleep 1
 done
 
-# 5. Build y Seed
+# 6. Build y Seed
 echo "🌱 Poblando datos..."
 npm run seed:users
-echo "🏗️ Compilando Frontend limpio..."
+echo "🏗️ Compilando Frontend..."
 npm run build
 
 echo "===================================================="
 echo "🚀 LANZANDO SISTEMA INTEGRADO"
 echo "===================================================="
-# Usamos dev:server para evitar que lance otro proceso de MongoDB
 npm run dev:server
