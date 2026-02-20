@@ -72,12 +72,16 @@ git clone https://github.com/tu-usuario/ReportaYa.git
 cd ReportaYa
 ```
 
-### 2. Instalar dependencias
-```bash
-npm install
-```
+### 2. Instalar y Configurar (Recomendado)
 
-### 3. Configurar variables de entorno
+Si estás en un entorno Linux (como Ubuntu) o tienes errores de permisos (`EACCES`), usa el script de reparación:
+```bash
+chmod +x fix-app.sh
+./fix-app.sh
+```
+*Este script corrige permisos, limpia procesos antiguos, instala dependencias y prepara la base de datos.*
+
+### 3. Configuración Manual (Opcional)
 Crea un archivo `.env` en la raíz (puedes copiar `.env.example` si existe) con:
 ```env
 MONGODB_URI=mongodb://localhost:27017/reportaya
