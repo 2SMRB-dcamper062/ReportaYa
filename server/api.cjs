@@ -609,6 +609,8 @@ app.post('/api/reports', async (req, res) => {
 
     await db.collection('reports').insertOne(report);
 
+    console.log(`📝 Nuevo reporte creado: ID=${report.id}, Email=${report.reporterEmail || 'NINGUNO'}`);
+
     // Notificar al usuario por correo
     if (report.reporterEmail) {
       sendEmail(report.reporterEmail, `Reporte Registrado: ${report.title}`, `
@@ -648,6 +650,18 @@ app.put('/api/reports/:id', async (req, res) => {
     );
 
     // Si el estado ha cambiado, enviar correo
+    if (oldReport && updateData.status && oldReport.status !== updateData.status) {
+      console.log(`Estado cambiado de "${oldReport.status}" a "${updateData.status}" para reporte ${req.params.id}`);
+    }
+
+    if (oldReport && updateData.status && oldReport.status !== updateData.status) {
+      if (!oldReport.reporterEmail) {
+        console.log(`⚠️ No se envía correo: el reporte ${req.params.id} no tiene email de contacto.`);
+      } else {
+        console.log(`📧 Preparando envío de correo de actualización a: ${oldReport.reporterEmail}`);
+      }
+    }
+
     if (oldReport && updateData.status && oldReport.status !== updateData.status && oldReport.reporterEmail) {
       const statusColors = {
         'Pendiente': '#e74c3c',
