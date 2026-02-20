@@ -620,13 +620,19 @@ app.post('/api/reports', async (req, res) => {
 
     // Asegurar que tenemos un email para notificar
     if (!report.reporterEmail && report.author) {
+      console.log(`🔍 Buscando email para autor: ${report.author}`);
       const user = await db.collection('users').findOne({ id: report.author });
-      if (user && user.email) report.reporterEmail = user.email;
+      if (user && user.email) {
+        report.reporterEmail = user.email;
+        console.log(`✅ Email recuperado de cuenta: ${report.reporterEmail}`);
+      } else {
+        console.log(`⚠️ No se encontró email para autor ID: ${report.author}`);
+      }
     }
 
     await db.collection('reports').insertOne(report);
 
-    console.log(`📝 Nuevo reporte creado: ID=${report.id}, Email=${report.reporterEmail || 'NINGUNO'}`);
+    console.log(`📝 Reporte guardado: ID=${report.id}, Email=${report.reporterEmail || 'NINGUNO'}, Autor=${report.author || 'Anónimo'}`);
 
     // Notificar al usuario por correo
     if (report.reporterEmail) {
@@ -668,20 +674,27 @@ app.put('/api/reports/:id', async (req, res) => {
 
     // Si el estado ha cambiado, enviar correo
     if (oldReport && updateData.status && oldReport.status !== updateData.status) {
-      console.log(`Estado cambiado de "${oldReport.status}" a "${updateData.status}" para reporte ${req.params.id}`);
-    }
+      console.log(`🔄 Cambio de estado detectado: ${oldReport.status} -> ${updateData.status} (Reporte: ${req.params.id})`);
 
-    // Intentar recuperar el email si falta
-    if (!oldReport.reporterEmail && oldReport.author) {
-      const user = await db.collection('users').findOne({ id: oldReport.author });
-      if (user && user.email) oldReport.reporterEmail = user.email;
-    }
+      // Recuperación de email de seguridad
+      if (!oldReport.reporterEmail && oldReport.author) {
+        console.log(`🔍 Recuperando email de autor: ${oldReport.author}`);
+        const user = await db.collection('users').findOne({ id: oldReport.author });
+        if (user && user.email) {
+          oldReport.reporterEmail = user.email;
+          console.log(`📧 Email recuperado: ${oldReport.reporterEmail}`);
+          // Guardar el email en el reporte para futuras actualizaciones
+          db.collection('reports').updateOne(
+            { id: req.params.id },
+            { $set: { reporterEmail: user.email } }
+          ).catch(e => console.error('Error persistiendo email recuperado:', e));
+        }
+      }
 
-    if (oldReport && updateData.status && oldReport.status !== updateData.status) {
-      if (!oldReport.reporterEmail) {
-        console.log(`⚠️ No se envía correo: el reporte ${req.params.id} no tiene email de contacto.`);
+      if (oldReport.reporterEmail) {
+        console.log(`📧 Enviando correo de actualización a: ${oldReport.reporterEmail}`);
       } else {
-        console.log(`📧 Preparando envío de correo de actualización a: ${oldReport.reporterEmail}`);
+        console.log(`⚠️ No se envía correo: el reporte ${req.params.id} no tiene email de contacto ni autor válido.`);
       }
     }
 
