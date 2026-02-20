@@ -1,48 +1,34 @@
 #!/bin/bash
 
 # ====================================================
-# 🚀 REPORTAYA - SISTEMA DE CONTROL (V5.1)
-# ====================================================
+# 🚀 REPORTAYA - FIX PERMISSION ULTIMATE (V7.0)
+# ====================================
 
 # Limpieza inicial
 clear
-stty sane 2>/dev/null
+echo "� REPARANDO PERMISOS Y ARRANCANDO..."
 
-# Función para apagar todo limpiamente
-trap 'printf "\n🛑 Deteniendo ReportaYa...\n"; sudo fuser -k 3000/tcp 3001/tcp 27017/tcp 2>/dev/null; stty sane; exit' SIGINT SIGTERM
-
-# 0. Asegurar propiedad y permisos (Fix radical 777)
-echo "🔒 Desbloqueando permisos de archivos..."
-CURRENT_USER=$(whoami)
-# Si estamos en /home/ubuntu, forzamos ese usuario, si no, el actual.
-TARGET_USER=${SUDO_USER:-$CURRENT_USER}
-
-sudo chown -R $TARGET_USER:$TARGET_USER /home/ubuntu/ReportaYa 2>/dev/null || sudo chown -R $TARGET_USER:$TARGET_USER .
-sudo chmod -R 755 .
-[ -d "node_modules" ] && sudo chmod -R 777 node_modules  # Permiso total a dependencias
-
-# 1. Limpieza radical de procesos y permisos
-echo "[1/4] Liberando puertos y corrigiendo permisos..."
+# 1. Limpieza radical de procesos
+echo "🛑 Deteniendo procesos antiguos..."
 sudo fuser -k 3000/tcp 3001/tcp 27017/tcp >/dev/null 2>&1
 sudo pkill -9 -f node >/dev/null 2>&1
 sudo pkill -9 -f vite >/dev/null 2>&1
 
-# Forzar propiedad al usuario actual (ubuntu)
-CURRENT_USER=$(whoami)
-TARGET_USER=${SUDO_USER:-$CURRENT_USER}
-sudo chown -R $TARGET_USER:$TARGET_USER .
+# 2. EL "MAZO" DE PERMISOS (Solución definitiva para EACCES)
+echo "🔨 Forzando propiedad del usuario $(whoami)..."
+sudo chown -R $USER:$USER . 2>/dev/null
+sudo chmod -R 755 . 2>/dev/null
 
-# 2. ELIMINACIÓN CRÍTICA (La causa del error EACCES)
-echo "🧹 Eliminando rastros bloqueados de Vite..."
-sudo rm -rf node_modules/.vite node_modules/.vite-temp .vite_cache >/dev/null 2>&1
+# 3. LIMPIEZA CRÍTICA DE VITE (La causa del error)
+echo "🧹 Eliminando carpetas temporales bloqueadas..."
+sudo rm -rf node_modules/.vite 2>/dev/null
+sudo rm -rf node_modules/.vite-temp 2>/dev/null
+sudo rm -rf .vite_cache 2>/dev/null
 
-# 3. Instalación/Verificación
-if [ ! -d "node_modules/express" ]; then
-    echo "📦 Instalando dependencias..."
-    npm install --quiet
-fi
+# 4. TRUCO FINAL: Crear la carpeta con permisos totales ANTES de que Vite la pida
+[ -d "node_modules" ] && sudo mkdir -p node_modules/.vite-temp && sudo chmod -R 777 node_modules 2>/dev/null
 
-# 4. Configuración (.env)
+# 5. Asegurar archivo .env con credenciales correctas
 if [ ! -f ".env" ]; then
     echo "📝 Creando archivo .env..."
     cat <<EOT > .env
@@ -57,12 +43,17 @@ SMTP_PASS=vxlx njyo pucz twnv
 EOT
 fi
 
-# 5. Base de Datos
+# 6. Base de Datos e Instalación
 sudo systemctl start mongodb 2>/dev/null || sudo systemctl start mongod 2>/dev/null
+if [ ! -d "node_modules/express" ]; then
+    echo "📦 Instalando dependencias..."
+    npm install --quiet
+fi
 
-# 6. Arranque (Forzando nuevo directorio de caché para evitar conflictos)
-echo "� Lanzando ReportaYa..."
+# 7. Arranque
+echo "🚀 Lanzando ReportaYa en el puerto 3000..."
 echo "----------------------------------------------------"
+# Forzamos la caché fuera de node_modules por seguridad extra
 export VITE_CACHE_DIR="./.vite_cache"
 npx -y concurrently --raw --kill-others \
   "PORT=3001 node server/api.cjs" \
