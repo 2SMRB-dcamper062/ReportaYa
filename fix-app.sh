@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ====================================================
-# 🚀 REPORTAYA - SISTEMA DE CONTROL (V3.6)
+# 🚀 REPORTAYA - SISTEMA DE CONTROL (V3.7)
 # ====================================================
 
 # Limpieza total de pantalla al inicio
@@ -14,25 +14,24 @@ echo "----------------------------------------------------"
 echo "🔧 INICIANDO REPORTAYA"
 echo "----------------------------------------------------"
 
-# 1. Limpieza de procesos (Silenciada para evitar desalineación)
-echo "[1/6] Liberando puertos y procesos antiguos..."
-{
-  sudo fuser -k 3000/tcp 3001/tcp 27017/tcp
-  sudo pkill -9 -f node
-  sudo pkill -9 -f mongod
-  sudo pkill -9 -f vite
-  sudo rm -rf node_modules/.vite-temp
-  sudo rm -f /tmp/mongodb-27017.sock
-  sudo rm -f /var/lib/mongodb/mongod.lock
-} >/dev/null 2>&1
+# 1. Limpieza de procesos y carpetas conflictivas
+echo "[1/6] Liberando puertos y archivos temporales..."
+sudo fuser -k 3000/tcp 3001/tcp 27017/tcp >/dev/null 2>&1
+sudo pkill -9 -f node >/dev/null 2>&1
+sudo pkill -9 -f mongod >/dev/null 2>&1
+sudo pkill -9 -f vite >/dev/null 2>&1
 
-# 2. Permisos
-echo "[2/6] Corrigiendo permisos de archivos..."
-sudo chown -R $USER:$USER . 2>/dev/null
-sudo chmod -R 755 . 2>/dev/null
-sudo rm -rf node_modules/.vite-temp 2>/dev/null # Refuerzo
+# Eliminar carpetas que causan el error EACCES de Vite
+sudo rm -rf node_modules/.vite >/dev/null 2>&1
+sudo rm -rf node_modules/.vite-temp >/dev/null 2>&1
+sudo rm -f /tmp/mongodb-27017.sock >/dev/null 2>&1
 
-# 3. Datos y Configuración
+# 2. Permisos (Crucial para evitar EACCES)
+echo "[2/6] Restaurando propiedad de los archivos..."
+sudo chown -R $USER:$USER .
+sudo chmod -R 755 .
+
+# 3. Configuración (.env)
 echo "[3/6] Sincronizando configuración (.env)..."
 PUBLIC_IP=$(curl -s ifconfig.me || echo "127.0.0.1")
 cat <<EOT > .env
@@ -47,25 +46,19 @@ SMTP_PASS=wemodqbgfcmjruot
 EOT
 
 # 4. Base de Datos
-echo "[4/6] Iniciando MongoDB..."
+echo "[4/6] Verificando MongoDB..."
 sudo systemctl start mongodb 2>/dev/null || sudo systemctl start mongod 2>/dev/null
-sleep 2
+sleep 1
 
-# 5. Dependencias y Build
-echo "[5/6] Verificando dependencias y compilando..."
+# 5. Dependencias
+echo "[5/6] Verificando dependencias..."
 if [ ! -d "node_modules" ]; then
-    echo "📦 Instalando librerías necesarias..."
-    npm install --no-audit --no-fund --quiet >/dev/null 2>&1
+    echo "📦 Instalando librerías (esto puede tardar)..."
+    npm install --quiet
 fi
 
-# Borramos temporales de vite que dan error de permisos (EACCES) antes de compilar
-sudo rm -rf node_modules/.vite-temp 2>/dev/null
-
-echo "🏗️ Generando build de la aplicación..."
-npm run build >/dev/null 2>&1
-
 # 6. Lanzamiento
-echo "[6/6] Verificando Servidor de Correo..."
+echo "[6/6] Preparando arranque..."
 echo "✅ Gmail Conectado: soporte.reportaya@gmail.com"
 
 echo "----------------------------------------------------"
@@ -73,8 +66,8 @@ echo "🚀 REPORTAYA LISTO EN: http://$PUBLIC_IP:3000"
 echo "Pulsa Ctrl+C para apagar el sistema"
 echo "----------------------------------------------------"
 
-# Lanzamiento FINAL
-# Eliminamos --force del build y aseguramos que vite arranque limpio
-npx concurrently --kill-others -n API,WEB -c cyan,magenta \
+# Lanzamiento en modo RAW para evitar problemas de alineación de 'concurrently'
+# Ejecutamos con --raw para que no añada prefijos que rompen el diseño de la consola
+npx concurrently --raw --kill-others \
   "cross-env PORT=3001 node server/api.cjs" \
   "npx vite --port 3000 --host 0.0.0.0 --clearScreen false"
