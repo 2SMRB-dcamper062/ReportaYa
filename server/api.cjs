@@ -70,8 +70,10 @@ async function initEmail() {
     if (process.env.SMTP_HOST) {
       transportConfig.host = process.env.SMTP_HOST;
       transportConfig.port = parseInt(process.env.SMTP_PORT || '587');
+      console.log(`📡 SMTP Config: Host=${transportConfig.host}, Port=${transportConfig.port}`);
     } else {
       transportConfig.service = process.env.SMTP_SERVICE || 'gmail';
+      console.log(`📡 SMTP Config: Service=${transportConfig.service}`);
     }
 
     emailTransporter = nodemailer.createTransport(transportConfig);
@@ -99,14 +101,15 @@ initEmail().catch(console.error);
 async function sendEmail(to, subject, html) {
   if (emailTransporter) {
     try {
-      const fromEmail = isRealEmail ? process.env.SMTP_USER : 'noreply@reportaya.es';
+      // Para Mailtrap Sandbox, el remitente puede ser cualquiera, pero mejor uno fijo
+      const fromEmail = process.env.SMTP_SENDER || process.env.SMTP_USER || 'noreply@reportaya.es';
       const info = await emailTransporter.sendMail({
         from: `"ReportaYa" <${fromEmail}>`,
         to, subject, html
       });
 
       if (isRealEmail) {
-        console.log(`✅ CORREO REAL ENVIADO a ${to}: ${subject}`);
+        console.log(`✅ CORREO ENVIADO CORRECTAMENTE a ${to}: ${subject}`);
       } else {
         const previewUrl = nodemailer.getTestMessageUrl(info);
         console.log(`🧪 [MODO PRUEBA] Correo enviado a ${to}. Ver enlace: ${previewUrl}`);
