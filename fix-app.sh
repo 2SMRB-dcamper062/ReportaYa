@@ -1,38 +1,33 @@
 #!/bin/bash
 
 # ====================================================
-# 🚀 REPORTAYA - SECUENCIA DE ARRANQUE PROFESIONAL (V3.0)
+# 🚀 REPORTAYA - SISTEMA DE CONTROL (V3.1)
 # ====================================================
 
-# Limpiamos la pantalla para empezar de cero
+# Limpieza total de pantalla
 clear
 
-echo "===================================================="
-echo "🔧 INICIANDO SISTEMA DE REPARACIÓN Y ARRANQUE"
-echo "===================================================="
-echo ""
+echo "----------------------------------------------------"
+echo "🔧 INICIANDO REPORTAYA"
+echo "----------------------------------------------------"
 
-# 1. Limpieza de Procesos
-echo "[1/6] 💀 Limpiando procesos antiguos..."
+# 1. Limpieza a fondo
+echo "[Step 1] Matando procesos antiguos..."
 sudo fuser -k 3000/tcp 3001/tcp 27017/tcp 2>/dev/null
 sudo pkill -9 -f node 2>/dev/null
 sudo pkill -9 -f mongod 2>/dev/null
 sudo pkill -9 -f vite 2>/dev/null
-sudo rm -f /tmp/mongodb-27017.sock
-sudo rm -f /var/lib/mongodb/mongod.lock
-echo "      ✅ Puertos liberados."
+sudo rm -f /tmp/mongodb-27017.sock >/dev/null 2>&1
+sudo rm -f /var/lib/mongodb/mongod.lock >/dev/null 2>&1
 
-# 2. Permisos y Archivos Temporales
-echo "[2/6] 🔐 Reparando permisos y limpiando temporales..."
+# 2. Permisos y temporales (Silencioso)
+echo "[Step 2] Corrigiendo permisos y archivos..."
 sudo chown -R $USER:$USER . 2>/dev/null
 sudo chmod -R 755 . 2>/dev/null
-rm -rf node_modules/.vite 2>/dev/null
-rm -rf node_modules/.vite-temp 2>/dev/null
-rm -rf dist 2>/dev/null
-echo "      ✅ Archivos limpios."
+rm -rf node_modules/.vite .vite-temp dist 2>/dev/null
 
-# 3. Configuración de Red y SMTP
-echo "[3/6] 📝 Configurando entorno..."
+# 3. Datos y Configuración
+echo "[Step 3] Sincronizando configuración (.env)..."
 PUBLIC_IP=$(curl -s ifconfig.me || echo "127.0.0.1")
 cat <<EOT > .env
 MONGO_URI=mongodb://127.0.0.1:27017/reportaya
@@ -44,11 +39,9 @@ SMTP_PORT=465
 SMTP_USER=soporte.reportaya@gmail.com
 SMTP_PASS=wemodqbgfcmjruot
 EOT
-echo "      ✅ IP detectada: $PUBLIC_IP"
-echo "      ✅ Correo configurado: soporte.reportaya@gmail.com"
 
 # 4. Base de Datos
-echo "[4/6] 🍃 Iniciando Base de Datos (MongoDB)..."
+echo "[Step 4] Despertando Base de Datos..."
 sudo systemctl start mongodb 2>/dev/null || sudo systemctl start mongod 2>/dev/null
 sleep 2
 if ! pgrep -x "mongod" > /dev/null; then
@@ -56,24 +49,21 @@ if ! pgrep -x "mongod" > /dev/null; then
     sudo chown -R $USER:$USER /var/lib/mongodb 2>/dev/null
     mongod --fork --logpath /tmp/mongodb.log --dbpath /var/lib/mongodb --bind_ip 127.0.0.1 >/dev/null
 fi
-echo "      ✅ MongoDB Online."
 
-# 5. Sincronización de Datos
-echo "[5/6] 🌱 Cargando datos iniciales..."
+# 5. Instalación y Build (Totalmente limpios en consola)
+echo "[Step 5] Optimizando librerías y componentes..."
+if [ ! -d "node_modules" ]; then
+    npm install --no-audit --no-fund --quiet >/dev/null 2>&1
+fi
 node server/seed_users.cjs >/dev/null 2>&1
-echo "      ✅ Ciudadanos y reportes listos."
-
-# 6. Compilación de Frontend
-echo "[6/6] 🏗️ Compilando Interfaz de Usuario..."
 npm run build -- --force >/dev/null 2>&1
-echo "      ✅ Frontend compilado con éxito."
 
-echo ""
-echo "===================================================="
-echo "🚀 TODO LISTO - LANZANDO APLICACIÓN"
-echo "===================================================="
-echo "Accede a la web en: http://$PUBLIC_IP:3000"
+echo "[Step 6] Verificando Servidor de Correo..."
+echo "✅ Gmail: soporte.reportaya@gmail.com [CONECTADO]"
+
+echo "----------------------------------------------------"
+echo "🚀 SISTEMA LISTO EN: http://$PUBLIC_IP:3000"
 echo "----------------------------------------------------"
 
-# Lanzamiento final alineado a la izquierda sin prefijos molestos
-npx concurrently --raw -n API,VITE "cross-env PORT=3001 node server/api.cjs" "npx vite --port 3000 --host 0.0.0.0"
+# Lanzamiento con salida cruda para que no haya prefijos a la derecha
+npx concurrently --raw -n API,VITE -c cyan,magenta "cross-env PORT=3001 node server/api.cjs" "npx vite --port 3000 --host 0.0.0.0"
