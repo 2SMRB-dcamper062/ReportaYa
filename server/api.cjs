@@ -59,19 +59,27 @@ try {
 
 // ─── Email Service ────────────────────────────────────────────────
 let emailTransporter = null;
+let isRealEmail = false;
 
 async function initEmail() {
   if (nodemailer && process.env.SMTP_USER && process.env.SMTP_PASS) {
-    emailTransporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: process.env.SMTP_PORT == '465',
+    const transportConfig = {
       auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
-    });
-    console.log('✅ Servicio de email REAL configurado con', process.env.SMTP_USER);
+    };
+
+    if (process.env.SMTP_HOST) {
+      transportConfig.host = process.env.SMTP_HOST;
+      transportConfig.port = parseInt(process.env.SMTP_PORT || '587');
+    } else {
+      transportConfig.service = process.env.SMTP_SERVICE || 'gmail';
+    }
+
+    emailTransporter = nodemailer.createTransport(transportConfig);
+    isRealEmail = true;
+    console.log('🚀 SERVIDOR DE CORREO CONECTADO:', process.env.SMTP_USER);
   } else if (nodemailer) {
     try {
-      console.log('🧪 Configurando cuenta de correo de prueba temporal (Ethereal)...');
+      console.log('🧪 Iniciando Modo de Prueba (Buzón Virtual)...');
       const testAccount = await nodemailer.createTestAccount();
       emailTransporter = nodemailer.createTransport({
         host: 'smtp.ethereal.email',
@@ -79,10 +87,9 @@ async function initEmail() {
         secure: false,
         auth: { user: testAccount.user, pass: testAccount.pass }
       });
-      console.log('ℹ️ MODO PRUEBA ACTIVO: Los correos se enviarán a Ethereal Mail.');
-      console.log('ℹ️ Encontrarás los enlaces para ver los correos en esta consola ante cada envío.');
+      isRealEmail = false;
     } catch (err) {
-      console.error('❌ Error configurando Ethereal:', err.message);
+      console.error('❌ Error configurando motor de correo:', err.message);
     }
   }
 }
@@ -92,23 +99,23 @@ initEmail().catch(console.error);
 async function sendEmail(to, subject, html) {
   if (emailTransporter) {
     try {
+      const fromEmail = isRealEmail ? process.env.SMTP_USER : 'noreply@reportaya.es';
       const info = await emailTransporter.sendMail({
-        from: `"ReportaYa" <${process.env.SMTP_USER || 'noreply@reportaya.es'}>`,
+        from: `"ReportaYa" <${fromEmail}>`,
         to, subject, html
       });
 
-      console.log(`📧 Email "${subject}" enviado a ${to}`);
-
-      // Si estamos en modo prueba, mostramos la URL para ver el correo
-      const previewUrl = nodemailer.getTestMessageUrl(info);
-      if (previewUrl) {
-        console.log('🔗 [VER CORREO AQUÍ]: ' + previewUrl);
+      if (isRealEmail) {
+        console.log(`✅ CORREO REAL ENVIADO a ${to}: ${subject}`);
+      } else {
+        const previewUrl = nodemailer.getTestMessageUrl(info);
+        console.log(`🧪 [MODO PRUEBA] Correo enviado a ${to}. Ver enlace: ${previewUrl}`);
       }
     } catch (err) {
-      console.error('❌ Error enviando email:', err.message);
+      console.error('❌ ERROR AL ENVIAR CORREO:', err.message);
     }
   } else {
-    console.log(`📧 [SIMULADO - SIN CONEXIÓN] Email a ${to}: ${subject}`);
+    console.log(`⚠️ NO HAY MOTOR DE CORREO para ${to}`);
   }
 }
 
