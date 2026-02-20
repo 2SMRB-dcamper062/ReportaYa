@@ -14,8 +14,6 @@ echo "----------------------------------------------------"
 # 1. Limpieza radical de procesos
 echo ""
 echo "🛑 1. Deteniendo procesos antiguos..."
-sudo chown -R ubuntu:ubuntu /home/ubuntu/ReportaYa
-rm -rf /home/ubuntu/ReportaYa/node_modules/.vite-temp 
 sudo fuser -k 3000/tcp 3001/tcp 27017/tcp >/dev/null 2>&1
 sudo pkill -9 -f node >/dev/null 2>&1
 sudo pkill -9 -f vite >/dev/null 2>&1
