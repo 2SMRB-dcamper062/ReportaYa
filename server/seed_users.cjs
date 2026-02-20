@@ -17,6 +17,8 @@ const users = [
   {
     id: 'antonio.diaz',
     name: 'Antonio Díaz',
+    surname: 'Díaz',
+    postalCode: '41001',
     email: 'antonio.diaz@reportaya.es',
     password: 'reportaya_2025',
     role: 'citizen',
@@ -31,6 +33,8 @@ const users = [
   {
     id: 'david.camacho',
     name: 'David Camacho',
+    surname: 'Camacho',
+    postalCode: '41010',
     email: 'david.camacho@reportaya.es',
     password: 'reportaya_2025',
     role: 'citizen',
@@ -45,6 +49,8 @@ const users = [
   {
     id: 'antonio.nieto',
     name: 'Antonio Nieto',
+    surname: 'Nieto',
+    postalCode: '41003',
     email: 'antonio.nieto@reportaya.es',
     password: 'reportaya_2025',
     role: 'citizen',
@@ -59,6 +65,8 @@ const users = [
   {
     id: 'admin-ayuntamiento',
     name: 'Ayuntamiento ReportaYa',
+    surname: 'Admin',
+    postalCode: '41001',
     email: 'ayuntamiento@reportaya.es',
     password: 'ayuntamiento',
     role: 'admin',
@@ -102,6 +110,8 @@ async function seed() {
         const profile = {
           id: u.id,
           name: u.name,
+          surname: u.surname || '',
+          postalCode: u.postalCode || '',
           role: normalizedRole,
           email: u.email,
           points: u.points,
