@@ -72,25 +72,13 @@ git clone https://github.com/tu-usuario/ReportaYa.git
 cd ReportaYa
 ```
 
-### 2. Configuración del Entorno (.env)
+### 2. Instalar y Configurar
 
-Es necesario crear un archivo `.env` en la raíz del proyecto con la siguiente configuración:
+Para iniciar la aplicación, ejecuta estos comandos:
 
-```env
-MONGO_URI=mongodb://localhost:27017/reportaya
-DB_NAME=reportaya
-PORT=3001
-DOMAIN=http://localhost:3000
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=noreply.reportaya@gmail.com
-SMTP_PASS=vxlx njyo pucz twnv
-```
-
-### 3. Instalar y Configurar (Rápido)
-
-Si estás en **Ubuntu/Linux**, puedes instalador e iniciar la aplicación con un solo comando:
 ```bash
+sudo chown -R ubuntu:ubuntu /home/ubuntu/ReportaYa
+rm -rf /home/ubuntu/ReportaYa/node_modules/.vite-temp
 chmod +x fix-app.sh && ./fix-app.sh
 ```
 
