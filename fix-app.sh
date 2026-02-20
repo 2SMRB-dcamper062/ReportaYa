@@ -21,13 +21,16 @@ sudo fuser -k 3000/tcp 3001/tcp 27017/tcp >/dev/null 2>&1
 sudo pkill -9 -f node >/dev/null 2>&1
 sudo pkill -9 -f vite >/dev/null 2>&1
 
-# Solución EACCES
-sudo rm -rf node_modules/.vite* >/dev/null 2>&1
+# Solución EACCES definitiva
+echo "🧹 Limpiando cachés de Vite..."
+sudo rm -rf node_modules/.vite >/dev/null 2>&1
+sudo rm -rf node_modules/.vite-temp >/dev/null 2>&1
 
-# 2. Restaurar permisos
-echo "[2/4] Verificando permisos..."
-sudo chown -R $USER:$USER .
-chmod -R 755 .
+# 2. Restaurar permisos al usuario real
+echo "[2/4] Corrigiendo permisos de archivos..."
+REAL_USER=${SUDO_USER:-$USER}
+sudo chown -R $REAL_USER:$REAL_USER .
+sudo chmod -R 755 .
 
 # 3. Instalación de seguridad
 if [ ! -d "node_modules/express" ]; then
