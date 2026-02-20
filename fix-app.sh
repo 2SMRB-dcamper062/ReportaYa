@@ -43,13 +43,13 @@ if [ ! -f ".env" ]; then
 MONGO_URI=mongodb://127.0.0.1:27017/reportaya
 DB_NAME=reportaya
 PORT=3001
-DOMAIN=http://$PUBLIC_IP:3000
+DOMAIN=http://localhost:3000
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
-SMTP_USER=soporte.reportaya@gmail.com
-SMTP_PASS=tu_clave_de_16_letras_aqui
+SMTP_USER=noreply.reportaya@gmail.com
+SMTP_PASS=vxlx njyo pucz twnv
 EOT
-    echo "⚠️ Por favor, edita el archivo .env con tu SMTP_PASS real."
+    echo "✅ Archivo .env creado con las credenciales correctas."
 fi
 
 # 5. Base de Datos
