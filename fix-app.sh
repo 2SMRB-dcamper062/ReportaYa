@@ -7,6 +7,18 @@ echo "===================================================="
 echo "🔧 INICIANDO SECUENCIA DE CONFIGURACIÓN/REPARACIÓN"
 echo "===================================================="
 
+# 0. Matar procesos existentes en puertos 3000 y 3001
+echo "💀 Limpiando puertos 3000 y 3001..."
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
+    # Comandos para Windows (Git Bash / PowerShell)
+    powershell.exe -Command "Stop-Process -Id (Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue).OwningProcess -Force" 2>/dev/null || echo "   Puerto 3000 libre."
+    powershell.exe -Command "Stop-Process -Id (Get-NetTCPConnection -LocalPort 3001 -ErrorAction SilentlyContinue).OwningProcess -Force" 2>/dev/null || echo "   Puerto 3001 libre."
+else
+    # Comandos para Linux / macOS
+    fuser -k 3000/tcp 2>/dev/null || echo "   Puerto 3000 libre."
+    fuser -k 3001/tcp 2>/dev/null || echo "   Puerto 3001 libre."
+fi
+
 # 1. Limpieza (Opcional, pero recomendado para reparación)
 echo "🧹 Limpiando artefactos antiguos..."
 rm -rf dist node_modules package-lock.json
