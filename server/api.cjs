@@ -59,31 +59,56 @@ try {
 
 // ─── Email Service ────────────────────────────────────────────────
 let emailTransporter = null;
-if (nodemailer && process.env.SMTP_USER && process.env.SMTP_PASS) {
-  emailTransporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
-  });
-  console.log('✅ Servicio de email configurado con', process.env.SMTP_USER);
-} else {
-  console.warn('⚠️ SMTP_USER / SMTP_PASS no configurados. Los emails se loguearan en consola.');
+
+async function initEmail() {
+  if (nodemailer && process.env.SMTP_USER && process.env.SMTP_PASS) {
+    emailTransporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST || 'smtp.gmail.com',
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: process.env.SMTP_PORT == '465',
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+    });
+    console.log('✅ Servicio de email REAL configurado con', process.env.SMTP_USER);
+  } else if (nodemailer) {
+    try {
+      console.log('🧪 Configurando cuenta de correo de prueba temporal (Ethereal)...');
+      const testAccount = await nodemailer.createTestAccount();
+      emailTransporter = nodemailer.createTransport({
+        host: 'smtp.ethereal.email',
+        port: 587,
+        secure: false,
+        auth: { user: testAccount.user, pass: testAccount.pass }
+      });
+      console.log('ℹ️ MODO PRUEBA ACTIVO: Los correos se enviarán a Ethereal Mail.');
+      console.log('ℹ️ Encontrarás los enlaces para ver los correos en esta consola ante cada envío.');
+    } catch (err) {
+      console.error('❌ Error configurando Ethereal:', err.message);
+    }
+  }
 }
+
+initEmail().catch(console.error);
 
 async function sendEmail(to, subject, html) {
   if (emailTransporter) {
     try {
-      await emailTransporter.sendMail({
-        from: `"ReportaYa" <${process.env.SMTP_USER}>`,
+      const info = await emailTransporter.sendMail({
+        from: `"ReportaYa" <${process.env.SMTP_USER || 'noreply@reportaya.es'}>`,
         to, subject, html
       });
-      console.log(`📧 Email enviado a ${to}: ${subject}`);
+
+      console.log(`📧 Email "${subject}" enviado a ${to}`);
+
+      // Si estamos en modo prueba, mostramos la URL para ver el correo
+      const previewUrl = nodemailer.getTestMessageUrl(info);
+      if (previewUrl) {
+        console.log('🔗 [VER CORREO AQUÍ]: ' + previewUrl);
+      }
     } catch (err) {
       console.error('❌ Error enviando email:', err.message);
     }
   } else {
-    console.log(`📧 [SIMULADO] Email a ${to}:`);
-    console.log(`   Asunto: ${subject}`);
-    console.log(`   Contenido: ${html.substring(0, 200)}...`);
+    console.log(`📧 [SIMULADO - SIN CONEXIÓN] Email a ${to}: ${subject}`);
   }
 }
 
@@ -287,7 +312,7 @@ app.post('/api/users/register', async (req, res) => {
     await db.collection('users').insertOne(userProfile);
     console.log('✅ User inserted into DB:', userId);
 
-    console.log('   Sending welcome email (background)...');
+    const domain = process.env.DOMAIN || 'http://localhost:3000';
     sendEmail(email, '¡Bienvenido a ReportaYa!', `
       <div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:20px;">
         <h1 style="color:#1e3a5f;">¡Bienvenido a ReportaYa! 🎉</h1>
@@ -297,7 +322,7 @@ app.post('/api/users/register', async (req, res) => {
         <p>Correo electrónico: <strong>${email}</strong></p>
         
         <p>Si no creaste esta cuenta o te olvidas de la contraseña, por favor, cambia tus credenciales de acceso:</p>
-        <p><a href="http://localhost:3000/?view=forgot" style="color:#007bff;text-decoration:underline;">Cambiar contraseña</a></p>
+        <p><a href="${domain}/?view=forgot" style="color:#007bff;text-decoration:underline;">Cambiar contraseña</a></p>
 
         <hr style="border:none;border-top:1px solid #eee;">
         

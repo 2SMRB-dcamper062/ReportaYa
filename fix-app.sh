@@ -1,66 +1,49 @@
 #!/bin/bash
 
 echo "===================================================="
-echo "🔧 SECUENCIA DE REPARACIÓN MAESTRA (V1.2)"
+echo "🔧 SECUENCIA DE REPARACIÓN PROTEGIDA (V1.4)"
 echo "===================================================="
 
-# 1. Limpieza de Procesos y Bloqueos
-echo "💀 Matando procesos y limpiando bloqueos..."
+# 1. Limpieza de Procesos
 sudo fuser -k 3000/tcp 3001/tcp 27017/tcp 2>/dev/null
-sudo pkill -f node 2>/dev/null
-sudo pkill -f mongod 2>/dev/null
-sudo rm -f /tmp/mongodb-27017.sock
-sudo rm -f /var/lib/mongodb/mongod.lock
 
-# 2. Permisos Recursivos (Elimina EACCES)
-echo "🔐 Reparando permisos de la carpeta del proyecto..."
-sudo chown -R $USER:$USER .
-sudo chmod -R 755 .
+# 2. Gestión Inteligente de .env (NO BORRA GMAIL)
+echo "📝 Sincronizando configuración de red..."
+PUBLIC_IP=$(curl -s ifconfig.me || echo "127.0.0.1")
 
-# 3. Configuración Forzada de Red
-echo "📝 Sincronizando configuración de red (IPv4)..."
-cat <<EOT > .env
+if [ ! -f .env ]; then
+    cat <<EOT > .env
 MONGO_URI=mongodb://127.0.0.1:27017
 DB_NAME=reportaya
 PORT=3001
-DOMAIN=http://127.0.0.1:3000
+DOMAIN=http://$PUBLIC_IP:3000
+SMTP_USER=tu-correo@gmail.com
+SMTP_PASS=tu-codigo-google
 EOT
-
-# 4. Asegurar MongoDB
-echo "🍃 Despertando MongoDB..."
-if ! command -v mongod &> /dev/null; then
-    sudo apt update && sudo apt install -y mongodb
+    echo "✨ Archivo .env creado. Edita SMTP_USER y SMTP_PASS con tus datos."
+else
+    # Actualizamos solo la red e IP, preservando el resto
+    sed -i "s|^DOMAIN=.*|DOMAIN=http://$PUBLIC_IP:3000|" .env
+    # Aseguramos que existan las variables de base de datos
+    grep -q "MONGO_URI=" .env || echo "MONGO_URI=mongodb://127.0.0.1:27017" >> .env
+    echo "✅ IP del servidor actualizada a $PUBLIC_IP. Configuración SMTP preservada."
 fi
 
-sudo systemctl start mongodb 2>/dev/null || sudo systemctl start mongod 2>/dev/null
-sleep 2
+# 3. Permisos
+sudo chown -R $USER:$USER .
+sudo chmod -R 755 .
 
+# 4. MongoDB
+sudo systemctl start mongodb 2>/dev/null || sudo systemctl start mongod 2>/dev/null
+[ ! -d /var/lib/mongodb ] && sudo mkdir -p /var/lib/mongodb && sudo chown -R $USER:$USER /var/lib/mongodb
 if ! pgrep -x "mongod" > /dev/null; then
-    echo "   Arrancando manualmente con bind_ip 127.0.0.1..."
-    sudo mkdir -p /var/lib/mongodb
-    sudo chown -R $USER:$USER /var/lib/mongodb
     mongod --fork --logpath /tmp/mongodb.log --dbpath /var/lib/mongodb --bind_ip 127.0.0.1
 fi
 
-# 5. Verificación de Puerto 27017 (Ping)
-echo "⏳ Esperando a que MongoDB acepte conexiones..."
-for i in {1..15}; do
-    if (mongosh --eval "db.adminCommand('ping')" --quiet &>/dev/null || mongo --eval "db.adminCommand('ping')" --quiet &>/dev/null); then
-        echo "✅ MongoDB ONLINE y respondiendo."
-        break
-    fi
-    [ $i -eq 15 ] && echo "❌ ERROR: MongoDB no arrancó. Revisa /tmp/mongodb.log" && exit 1
-    sleep 1
-done
-
-# 6. Reinstalar y Poblar
-echo "🧹 Reinstalando dependencias limpias..."
-rm -rf dist node_modules package-lock.json
+# 5. Build y Seed
 npm install
 npm run seed:users
 npm run build
 
-echo "===================================================="
-echo "🚀 LANZANDO SISTEMA INTEGRADO"
-echo "===================================================="
+echo "🚀 LANZANDO SISTEMA..."
 npm run dev:server
