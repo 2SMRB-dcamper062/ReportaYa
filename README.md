@@ -72,25 +72,13 @@ git clone https://github.com/tu-usuario/ReportaYa.git
 cd ReportaYa
 ```
 
-### 2. Instalar y Configurar (Rápido)
-
-Si usas **Bash** (Git Bash, WSL, etc.), puedes configurar todo el entorno con un solo comando:
-```bash
-./fix-app.sh
-```
-*Este script limpiará artefactos previos, instalará dependencias, poblará la base de datos y compilará el frontend.*
-
-### 3. Configurar manualmente (Opcional)
-
-Si prefieres hacerlo paso a paso:
-
-**A. Instalar dependencias**
+### 2. Instalar dependencias
 ```bash
 npm install
 ```
 
-**B. Configurar variables de entorno**
-Crea un archivo `.env` en la raíz con:
+### 3. Configurar variables de entorno
+Crea un archivo `.env` en la raíz (puedes copiar `.env.example` si existe) con:
 ```env
 MONGODB_URI=mongodb://localhost:27017/reportaya
 SMTP_HOST=smtp.gmail.com
@@ -102,51 +90,24 @@ DOMAIN=http://localhost:5173
 
 ### 4. Iniciar la App (Desarrollo / Hot Reload)
 
-> ⚠️ **Importante**: Asegúrate de tener **MongoDB** instalado. El comando de inicio intentará arrancar `mongod` automáticamente.
+> ⚠️ **Importante**: Asegúrate de que **MongoDB** esté ejecutándose en tu sistema (`mongod`) antes de iniciar.
 
-Para arrancar todo el sistema (Base de Datos + Backend + Frontend) de forma simultánea:
+Puedes ejecutar cualquiera de los dos comandos:
 ```bash
+npm start
+# O bien:
 npm run dev
 ```
 
-Esto lanzará:
-1. **Frontend**: En `http://localhost:3000` (Vite)
-2. **Backend (API)**: En `http://localhost:3001`
-3. **Base de Datos**: MongoDB en su puerto por defecto (27017)
+Ambos harán lo mismo:
+1. Iniciar el Frontend en `http://localhost:5173`
+2. Iniciar el Backend en `http://localhost:3000`
 
-### 5. Poblar la Base de Datos (Seeding)
-
-Para cargar los usuarios de prueba y reportes iniciales en tu base de datos local:
-```bash
-npm run seed:users
-```
-
-### 6. Usuarios de Prueba
-
-Una vez poblada la base de datos, puedes usar estas credenciales:
-
-| Tipo | Email | Contraseña |
-|------|-------|------------|
-| **Administrador** | `ayuntamiento@reportaya.es` | `ayuntamiento` |
-| **Ciudadano** | `antonio.diaz@reportaya.es` | `reportaya_2025` |
-| **Premium** | `david.camacho@reportaya.es` | `reportaya_2025` |
-
----
-
-## 🏗️ Producción
-
-Si deseas compilar la aplicación para producción:
-
-1. **Compilar el frontend**:
-   ```bash
-   npm run build
-   ```
-2. **Lanzar el servidor unificado**:
-   ```bash
-   npm run serve
-   ```
-   *Esto servirá la aplicación completa (Frontend y API) en `http://localhost:3000`.*
-
+### 5. Producción (Opcional)
+Si quieres probar la versión compilada como en producción:
+1. `npm run build`
+2. `node server/api.cjs`
+(Esto correrá todo en `http://localhost:3000`).
 
 ---
 
