@@ -839,6 +839,7 @@ const App = () => {
       id: `${Date.now()}`,
       ...data,
       status: IssueStatus.PENDING,
+      reporterEmail: user?.email,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };

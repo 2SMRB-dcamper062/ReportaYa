@@ -35,6 +35,7 @@ export interface Issue {
   updatedAt?: string;
   votes?: number; // Número de votos del reporte
   author?: string; // Made optional to resolve the error
+  reporterEmail?: string; // Correo de quien hizo el reporte
   adminResponse?: string;
   translations?: Record<string, { title: string; description: string }>; // Auto-translated content per locale
 }

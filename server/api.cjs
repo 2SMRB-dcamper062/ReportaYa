@@ -608,6 +608,25 @@ app.post('/api/reports', async (req, res) => {
     report.createdAt = report.createdAt || new Date().toISOString();
 
     await db.collection('reports').insertOne(report);
+
+    // Notificar al usuario por correo
+    if (report.reporterEmail) {
+      sendEmail(report.reporterEmail, `Reporte Registrado: ${report.title}`, `
+        <div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:20px;border:1px solid #eee;border-radius:10px;">
+          <h2 style="color:#1e3a5f;">✅ ¡Reporte recibido!</h2>
+          <p>Hola,</p>
+          <p>Hemos recibido tu reporte: <strong>"${report.title}"</strong>.</p>
+          <p>Tu incidencia ha sido registrada correctamente en el sistema y pronto será revisada por los técnicos municipales.</p>
+          <div style="background:#f9f9f9;padding:15px;border-radius:8px;margin:20px 0;">
+            <p style="margin:0;"><strong>Estado actual:</strong> <span style="color:#e74c3c;font-weight:bold;">${report.status || 'Pendiente'}</span></p>
+          </div>
+          <p>Te mantendremos informado sobre cualquier cambio en el estado de tu reporte.</p>
+          <hr style="border:none;border-top:1px solid #eee;">
+          <p style="color:#aaa;font-size:11px;">ReportaYa — Sevilla</p>
+        </div>
+      `).catch(() => { });
+    }
+
     res.status(201).json({ ok: true, id: report.id });
   } catch (err) {
     console.error('Error POST /api/reports', err);
@@ -618,6 +637,7 @@ app.post('/api/reports', async (req, res) => {
 // PUT /api/reports/:id — Update report
 app.put('/api/reports/:id', async (req, res) => {
   try {
+    const oldReport = await db.collection('reports').findOne({ id: req.params.id });
     const updateData = { ...req.body };
     delete updateData._id;
 
@@ -626,6 +646,35 @@ app.put('/api/reports/:id', async (req, res) => {
       { $set: updateData },
       { upsert: true }
     );
+
+    // Si el estado ha cambiado, enviar correo
+    if (oldReport && updateData.status && oldReport.status !== updateData.status && oldReport.reporterEmail) {
+      const statusColors = {
+        'Pendiente': '#e74c3c',
+        'En Proceso': '#f39c12',
+        'Resuelto': '#27ae60'
+      };
+      const color = statusColors[updateData.status] || '#1e3a5f';
+
+      sendEmail(oldReport.reporterEmail, `Actualización de tu reporte: ${updateData.status}`, `
+        <div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:20px;border:1px solid #eee;border-radius:10px;">
+          <h2 style="color:#1e3a5f;">🔄 Cambio de estado</h2>
+          <p>Tu reporte <strong>"${oldReport.title}"</strong> ha cambiado de estado.</p>
+          <div style="background:#f9f9f9;padding:15px;border-radius:8px;margin:20px 0;text-align:center;">
+            <p style="margin:0;font-size:18px;">Nuevo estado: <strong style="color:${color};">${updateData.status}</strong></p>
+          </div>
+          ${updateData.adminResponse ? `
+          <div style="border-left:4px solid #1e3a5f;padding-left:15px;margin:20px 0;">
+            <p style="margin:0;font-style:italic;"><strong>Respuesta del Ayuntamiento:</strong></p>
+            <p>${updateData.adminResponse}</p>
+          </div>` : ''}
+          <p>Gracias por colaborar en la mejora de tu ciudad.</p>
+          <hr style="border:none;border-top:1px solid #eee;">
+          <p style="color:#aaa;font-size:11px;">ReportaYa — Sevilla</p>
+        </div>
+      `).catch(() => { });
+    }
+
     res.json({ ok: true });
   } catch (err) {
     console.error(`❌ Error en ${req.method} ${req.path}:`, err);
