@@ -1,42 +1,50 @@
 #!/bin/bash
 
 # ====================================================
-# 🚀 REPORTAYA - SISTEMA DE CONTROL (V3.8)
+# 🚀 REPORTAYA - SISTEMA DE CONTROL (V4.0)
 # ====================================================
 
-# Limpieza total de pantalla y reset de terminal para evitar el efecto "escalera"
+# 1. LIMPIEZA VISUAL ABSOLUTA
+# Corregimos el terminal para evitar el "efecto escalera"
+stty sane 2>/dev/null
 clear
-reset 2>/dev/null || tput reset 2>/dev/null
 
-# Función para cerrar todo al pulsar Ctrl+C
-trap 'echo ""; echo "🛑 Apagando ReportaYa..."; sudo fuser -k 3000/tcp 3001/tcp 27017/tcp 2>/dev/null; exit' SIGINT SIGTERM
+# Función para apagar todo limpiamente
+trap 'echo ""; echo "🛑 Deteniendo servicios..."; sudo fuser -k 3000/tcp 3001/tcp 27017/tcp 2>/dev/null; stty sane; exit' SIGINT SIGTERM
 
-echo "----------------------------------------------------"
-echo "🔧 INICIANDO REPORTAYA"
-echo "----------------------------------------------------"
+echo "===================================================="
+echo "🔧 REPARANDO EL ENTORNO DE REPORTAYA"
+echo "===================================================="
 
-# 1. Limpieza AGRESIVA de procesos y carpetas
-echo "[1/6] Limpiando procesos y bloqueos de archivos..."
+# 2. LIMPIEZA DE PROCESOS
+echo "[1/4] Liberando puertos y matando procesos antiguos..."
 {
-  sudo fuser -k 3001/tcp 3000/tcp 27017/tcp
-  sudo pkill -9 -f node
-  sudo pkill -9 -f mongod
-  sudo pkill -9 -f vite
+    sudo fuser -k 3000/tcp 3001/tcp 27017/tcp
+    sudo pkill -9 -f node
+    sudo pkill -9 -f mongod
+    sudo pkill -9 -f vite
 } >/dev/null 2>&1
 
-# Eliminar carpetas de cache de Vite (CAUSA DEL ERROR EACCES)
-sudo rm -rf node_modules/.vite* >/dev/null 2>&1
-sudo rm -f /tmp/mongodb-27017.sock >/dev/null 2>&1
+# 3. SOLUCIÓN RADICAL AL ERROR DE PERMISOS (EACCES)
+echo "[2/4] Resolviendo bloqueos de archivos (Vite EACCES)..."
+# Borramos carpetas de cache que suelen dar problemas de permisos
+sudo rm -rf node_modules/.vite
+sudo rm -rf node_modules/.vite-temp
+sudo rm -rf .vite-temp
+sudo rm -rf dist
 
-# 2. Permisos TOTALES
-echo "[2/6] Corrigiendo permisos (Solución EACCES)..."
-sudo chown -R $USER:$USER .
-# Damos permisos de escritura total a node_modules para que Vite no falle
-sudo chmod -R 777 node_modules 2>/dev/null || true
-chmod -R 755 . 2>/dev/null
+# Forzamos que TODO el proyecto sea propiedad de tu usuario actual
+sudo chown -R $(whoami):$(whoami) .
 
-# 3. Configuración (.env)
-echo "[3/6] Sincronizando configuración (.env)..."
+# Pre-creamos las carpetas problemáticas y les damos permiso total
+mkdir -p node_modules/.vite
+mkdir -p node_modules/.vite-temp
+chmod -R 777 node_modules/.vite node_modules/.vite-temp 2>/dev/null
+
+# 4. BASE DE DATOS Y CONFIGURACIÓN
+echo "[3/4] Iniciando Base de Datos y Configuración..."
+sudo systemctl start mongodb 2>/dev/null || sudo systemctl start mongod 2>/dev/null
+
 PUBLIC_IP=$(curl -s ifconfig.me || echo "127.0.0.1")
 cat <<EOT > .env
 MONGO_URI=mongodb://127.0.0.1:27017/reportaya
@@ -49,31 +57,20 @@ SMTP_USER=soporte.reportaya@gmail.com
 SMTP_PASS=wemodqbgfcmjruot
 EOT
 
-# 4. Base de Datos
-echo "[4/6] Verificando MongoDB..."
-sudo systemctl start mongodb 2>/dev/null || sudo systemctl start mongod 2>/dev/null
-sleep 1
-
-# 5. Dependencias
-echo "[5/6] Verificando dependencias..."
-if [ ! -d "node_modules" ]; then
-    echo "📦 Instalando librerías..."
-    npm install --quiet
-fi
-
-# 6. Lanzamiento
-echo "[6/6] Preparando arranque final..."
-echo "✅ Servidor de Correo: soporte.reportaya@gmail.com"
-
+# 5. ARRANQUE
+echo "[4/4] Lanzando aplicación..."
 echo "----------------------------------------------------"
-echo "🚀 REPORTAYA LISTO EN: http://$PUBLIC_IP:3000"
-echo "Pulsa Ctrl+C para apagar el sistema"
+echo "🚀 REPORTAYA ESTARÁ DISPONIBLE EN:"
+echo "👉  http://$PUBLIC_IP:3000"
 echo "----------------------------------------------------"
+echo "(Presiona Ctrl+C para detener)"
+echo ""
 
-# Usamos concurrently con prefijos cortos pero sin --raw para mantener el orden de las líneas
-# Si el efecto escalera persiste, intentaremos sin concurrently.
-npx concurrently --kill-others \
-  -n API,WEB \
-  -c "bgCyan.bold,bgMagenta.bold" \
+# Forzamos stty sane una vez más justo antes de arrancar los servicios
+stty sane 2>/dev/null
+
+# Lanzamiento usando concurrently en modo RAW para evitar desorden de columnas
+# Usamos --raw para que no añada prefijos que desalinean el texto
+npx concurrently --raw --kill-others \
   "cross-env PORT=3001 node server/api.cjs" \
   "npx vite --port 3000 --host 0.0.0.0 --clearScreen false"
