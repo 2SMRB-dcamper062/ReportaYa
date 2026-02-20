@@ -1,52 +1,55 @@
 #!/bin/bash
 
 echo "===================================================="
-echo "🔧 SECUENCIA DE REPARACIÓN TOTAL (V1.6)"
+echo "🔧 SECUENCIA DE REPARACIÓN DEFINITIVA (V1.7)"
 echo "===================================================="
 
-# 1. Limpieza Agresiva de Procesos y Bloqueos
-echo "💀 Matando procesos y limpiando sockets de sistema..."
+# 1. Limpieza de Procesos Descontrolados
+echo "💀 Matando procesos en puertos 3000, 3001 y 27017..."
 sudo fuser -k 3000/tcp 3001/tcp 27017/tcp 2>/dev/null
-sudo pkill -f node 2>/dev/null
-sudo pkill -f mongod 2>/dev/null
-# ESTO ES CRÍTICO: Limpiar el socket que causa el error de MongoDB
+sudo pkill -9 -f node 2>/dev/null
+sudo pkill -9 -f vite 2>/dev/null
+sudo pkill -9 -f mongod 2>/dev/null
 sudo rm -f /tmp/mongodb-27017.sock
-sudo rm -f /var/lib/mongodb/mongod.lock
 
-# 2. Reparar Permisos de Raíz
-echo "🔐 Recuperando propiedad de los archivos..."
+# 2. Reseteo de Permisos Críticos
+echo "🔐 Reparando permisos y limpiando temporales..."
 sudo chown -R $USER:$USER .
-find . -name ".vite-temp" -type d -exec rm -rf {} + 2>/dev/null
+rm -rf node_modules/.vite-temp
+rm -rf node_modules/.vite
 
-# 3. Configurar Entorno (IP Pública)
+# 3. Asegurar Configuración .env
 PUBLIC_IP=$(curl -s ifconfig.me || echo "127.0.0.1")
-sed -i "s|^DOMAIN=.*|DOMAIN=http://$PUBLIC_IP:3000|" .env
+if [ ! -f .env ]; then
+    echo "⚠️ .env no encontrado. Creando uno nuevo..."
+    cat <<EOT > .env
+MONGO_URI=mongodb://127.0.0.1:27017/reportaya
+DB_NAME=reportaya
+PORT=3001
+DOMAIN=http://$PUBLIC_IP:3000
+SMTP_HOST=sandbox.smtp.mailtrap.io
+SMTP_PORT=2525
+SMTP_USER=39d905339322c9
+SMTP_PASS=99e486dd618da5
+EOT
+else
+    sed -i "s|^DOMAIN=.*|DOMAIN=http://$PUBLIC_IP:3000|" .env
+    echo "✅ .env actualizado con IP: $PUBLIC_IP"
+fi
 
-# 4. Asegurar MongoDB
-echo "🍃 Iniciando base de datos..."
+# 4. Iniciar MongoDB
+echo "🍃 Iniciando MongoDB..."
 sudo systemctl start mongodb 2>/dev/null || sudo systemctl start mongod 2>/dev/null
 sleep 2
-if ! pgrep -x "mongod" > /dev/null; then
-    sudo mkdir -p /var/lib/mongodb
-    sudo chown -R $USER:$USER /var/lib/mongodb
-    mongod --fork --logpath /tmp/mongodb.log --dbpath /var/lib/mongodb --bind_ip 127.0.0.1
-fi
 
-# 5. Instalación y Build Limpio
-echo "📦 Verificando dependencias..."
-if [ ! -d "node_modules" ]; then
-    npm install
-fi
-
-echo "🌱 Poblando base de datos..."
+# 5. Build y Seed
+echo "🌱 Sincronizando datos..."
 npm run seed:users
-
-echo "🏗️ Compilando Frontend (Vite)..."
-# Borramos cache de vite para evitar EACCES
-rm -rf node_modules/.vite
+echo "🏗️ Compilando Frontend..."
 npm run build
 
 echo "===================================================="
-echo "🚀 SISTEMA LISTO - LANZANDO..."
+echo "🚀 TODO LISTO. LANZANDO APLICACIÓN..."
 echo "===================================================="
+# Lanzamos con el script que evita conflictos de MongoDB
 npm run dev:server
