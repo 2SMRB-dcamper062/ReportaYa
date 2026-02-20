@@ -79,8 +79,17 @@ async function initEmail() {
     }
 
     emailTransporter = nodemailer.createTransport(transportConfig);
-    isRealEmail = true;
-    console.log('🚀 SERVIDOR DE CORREO CONECTADO:', process.env.SMTP_USER);
+
+    // Verificar conexión inmediatamente
+    emailTransporter.verify((error) => {
+      if (error) {
+        console.error('❌ ERROR CRÍTICO EN SMTP:', error.message);
+        isRealEmail = false;
+      } else {
+        console.log('🚀 SERVIDOR DE CORREO LISTO: Envío real activado para', process.env.SMTP_USER);
+        isRealEmail = true;
+      }
+    });
   } else if (nodemailer) {
     try {
       console.log('🧪 Iniciando Modo de Prueba (Buzón Virtual)...');
@@ -103,11 +112,13 @@ initEmail().catch(console.error);
 async function sendEmail(to, subject, html) {
   if (emailTransporter) {
     try {
-      // Para Mailtrap Sandbox, el remitente puede ser cualquiera, pero mejor uno fijo
+      console.log(`📧 Intentando enviar correo a: ${to}...`);
       const fromEmail = process.env.SMTP_SENDER || process.env.SMTP_USER || 'noreply@reportaya.es';
       const info = await emailTransporter.sendMail({
         from: `"ReportaYa" <${fromEmail}>`,
-        to, subject, html
+        to,
+        subject,
+        html
       });
 
       if (isRealEmail) {
