@@ -618,6 +618,12 @@ app.post('/api/reports', async (req, res) => {
     if (!report.id) report.id = Date.now().toString();
     report.createdAt = report.createdAt || new Date().toISOString();
 
+    // Asegurar que tenemos un email para notificar
+    if (!report.reporterEmail && report.author) {
+      const user = await db.collection('users').findOne({ id: report.author });
+      if (user && user.email) report.reporterEmail = user.email;
+    }
+
     await db.collection('reports').insertOne(report);
 
     console.log(`📝 Nuevo reporte creado: ID=${report.id}, Email=${report.reporterEmail || 'NINGUNO'}`);
@@ -663,6 +669,12 @@ app.put('/api/reports/:id', async (req, res) => {
     // Si el estado ha cambiado, enviar correo
     if (oldReport && updateData.status && oldReport.status !== updateData.status) {
       console.log(`Estado cambiado de "${oldReport.status}" a "${updateData.status}" para reporte ${req.params.id}`);
+    }
+
+    // Intentar recuperar el email si falta
+    if (!oldReport.reporterEmail && oldReport.author) {
+      const user = await db.collection('users').findOne({ id: oldReport.author });
+      if (user && user.email) oldReport.reporterEmail = user.email;
     }
 
     if (oldReport && updateData.status && oldReport.status !== updateData.status) {
