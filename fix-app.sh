@@ -1,23 +1,24 @@
 #!/bin/bash
 
 # ====================================================
-# 🚀 REPORTAYA - SISTEMA DE CONTROL (V4.0)
+# 🚀 REPORTAYA - SISTEMA DE CONTROL (V4.1)
 # ====================================================
 
-# 1. LIMPIEZA VISUAL ABSOLUTA
-# Corregimos el terminal para evitar el "efecto escalera"
+# 1. ARREGLO VISUAL (SOLUCIÓN ESCALERA)
+# stty sane devuelve la terminal a modo normal cada vez que se llama
 stty sane 2>/dev/null
 clear
 
 # Función para apagar todo limpiamente
-trap 'echo ""; echo "🛑 Deteniendo servicios..."; sudo fuser -k 3000/tcp 3001/tcp 27017/tcp 2>/dev/null; stty sane; exit' SIGINT SIGTERM
+trap 'printf "\n🛑 Deteniendo servicios...\n"; sudo fuser -k 3000/tcp 3001/tcp 27017/tcp 2>/dev/null; stty sane; exit' SIGINT SIGTERM
 
-echo "===================================================="
-echo "🔧 REPARANDO EL ENTORNO DE REPORTAYA"
-echo "===================================================="
+printf "====================================================\n"
+printf "🔧 REPARANDO EL ENTORNO DE REPORTAYA\n"
+printf "====================================================\n"
 
 # 2. LIMPIEZA DE PROCESOS
-echo "[1/4] Liberando puertos y matando procesos antiguos..."
+printf "[1/4] Liberando puertos y procesos antiguos...\n"
+stty sane 2>/dev/null
 {
     sudo fuser -k 3000/tcp 3001/tcp 27017/tcp
     sudo pkill -9 -f node
@@ -25,24 +26,23 @@ echo "[1/4] Liberando puertos y matando procesos antiguos..."
     sudo pkill -9 -f vite
 } >/dev/null 2>&1
 
-# 3. SOLUCIÓN RADICAL AL ERROR DE PERMISOS (EACCES)
-echo "[2/4] Resolviendo bloqueos de archivos (Vite EACCES)..."
-# Borramos carpetas de cache que suelen dar problemas de permisos
-sudo rm -rf node_modules/.vite
-sudo rm -rf node_modules/.vite-temp
-sudo rm -rf .vite-temp
-sudo rm -rf dist
+# 3. SOLUCIÓN PERMISOS Y DEPENDENCIAS
+printf "[2/4] Resolviendo bloqueos de archivos y dependencias...\n"
+stty sane 2>/dev/null
+# Borrar carpetas de cache conflictivas
+sudo rm -rf node_modules/.vite* .vite-temp dist 2>/dev/null
 
-# Forzamos que TODO el proyecto sea propiedad de tu usuario actual
+# Reclamar propiedad y dar permisos
 sudo chown -R $(whoami):$(whoami) .
-
-# Pre-creamos las carpetas problemáticas y les damos permiso total
-mkdir -p node_modules/.vite
-mkdir -p node_modules/.vite-temp
-chmod -R 777 node_modules/.vite node_modules/.vite-temp 2>/dev/null
+if [ ! -d "node_modules" ]; then
+    printf "📦 Instalando librerías necesarias...\n"
+    npm install --quiet
+fi
+sudo chmod -R 777 node_modules/.vite* 2>/dev/null || true
 
 # 4. BASE DE DATOS Y CONFIGURACIÓN
-echo "[3/4] Iniciando Base de Datos y Configuración..."
+printf "[3/4] Iniciando Base de Datos y Configuración...\n"
+stty sane 2>/dev/null
 sudo systemctl start mongodb 2>/dev/null || sudo systemctl start mongod 2>/dev/null
 
 PUBLIC_IP=$(curl -s ifconfig.me || echo "127.0.0.1")
@@ -57,20 +57,19 @@ SMTP_USER=soporte.reportaya@gmail.com
 SMTP_PASS=wemodqbgfcmjruot
 EOT
 
-# 5. ARRANQUE
-echo "[4/4] Lanzando aplicación..."
-echo "----------------------------------------------------"
-echo "🚀 REPORTAYA ESTARÁ DISPONIBLE EN:"
-echo "👉  http://$PUBLIC_IP:3000"
-echo "----------------------------------------------------"
-echo "(Presiona Ctrl+C para detener)"
-echo ""
+# 5. ARRANQUE FINAL
+printf "[4/4] Lanzando aplicación...\n"
+stty sane 2>/dev/null
+printf "----------------------------------------------------\n"
+printf "🚀 REPORTAYA LISTO EN: http://$PUBLIC_IP:3000\n"
+printf "----------------------------------------------------\n"
+printf "(Presiona Ctrl+C para detener)\n\n"
 
-# Forzamos stty sane una vez más justo antes de arrancar los servicios
+# Reajuste final de terminal antes del stream de datos
 stty sane 2>/dev/null
 
-# Lanzamiento usando concurrently en modo RAW para evitar desorden de columnas
-# Usamos --raw para que no añada prefijos que desalinean el texto
-npx concurrently --raw --kill-others \
-  "cross-env PORT=3001 node server/api.cjs" \
-  "npx vite --port 3000 --host 0.0.0.0 --clearScreen false"
+# Usamos npx -y para evitar preguntas interactivas
+# Quitamos cross-env y usamos variable de entorno directa de shell
+npx -y concurrently --raw --kill-others \
+  "PORT=3001 node server/api.cjs" \
+  "npx -y vite --port 3000 --host 0.0.0.0 --clearScreen false"
