@@ -9,8 +9,22 @@
  */
 
 const { MongoClient } = require('mongodb');
+const fs = require('fs');
+const path = require('path');
 
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017';
+// --- MANUAL ENV LOADER ---
+try {
+  const envPath = path.join(__dirname, '../.env');
+  if (fs.existsSync(envPath)) {
+    const envContent = fs.readFileSync(envPath, 'utf8');
+    envContent.split('\n').forEach(line => {
+      const parts = line.split('=');
+      if (parts.length === 2) process.env[parts[0].trim()] = parts[1].trim();
+    });
+  }
+} catch (e) { }
+
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017';
 const DB_NAME = process.env.DB_NAME || 'reportaya';
 
 const users = [

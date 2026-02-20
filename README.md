@@ -72,16 +72,16 @@ git clone https://github.com/tu-usuario/ReportaYa.git
 cd ReportaYa
 ```
 
-### 2. Instalar y Configurar (Recomendado)
+### 2. Instalar y Configurar (Rápido)
 
-Si estás en un entorno Linux (como Ubuntu) o tienes errores de permisos (`EACCES`), usa el script de reparación:
+Si estás en **Ubuntu/Linux**, puedes configurar y arreglar todo el entorno (permisos, base de datos y dependencias) con un solo comando:
 ```bash
-chmod +x fix-app.sh
-./fix-app.sh
+chmod +x fix-app.sh && ./fix-app.sh
 ```
-*Este script corrige permisos, limpia procesos antiguos, instala dependencias y prepara la base de datos.*
+*Este script automatiza la instalación de MongoDB, corrige errores de permisos (`EACCES`), puebla la base de datos y lanza la aplicación.*
 
 ### 3. Configuración Manual (Opcional)
+Si prefieres hacerlo paso a paso, consulta el script `fix-app.sh` para ver los comandos manuales.
 Crea un archivo `.env` en la raíz (puedes copiar `.env.example` si existe) con:
 ```env
 MONGODB_URI=mongodb://localhost:27017/reportaya

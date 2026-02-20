@@ -23,6 +23,22 @@ const cors = require('cors');
 const { MongoClient, ObjectId } = require('mongodb');
 const path = require('path');
 
+// --- MANUAL ENV LOADER ---
+try {
+  const fs = require('fs');
+  const envPath = path.join(__dirname, '../.env');
+  if (fs.existsSync(envPath)) {
+    const envContent = fs.readFileSync(envPath, 'utf8');
+    envContent.split('\n').forEach(line => {
+      const parts = line.split('=');
+      if (parts.length === 2) process.env[parts[0].trim()] = parts[1].trim();
+    });
+    console.log('✅ Variables de entorno cargadas desde .env');
+  }
+} catch (e) {
+  console.warn('⚠️ No se pudo cargar el archivo .env');
+}
+
 // Safe require for bcryptjs
 let bcrypt;
 try {
