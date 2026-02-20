@@ -212,7 +212,10 @@ app.put('/api/users/:id', async (req, res) => {
 // POST /api/users/register — Register a new user with email + password
 app.post('/api/users/register', async (req, res) => {
   try {
+    console.log('📝 POST /api/users/register - Start');
     const { email, password, name, surname, postalCode } = req.body;
+    console.log('   Payload received:', { email, name, surname, postalCode }); // Don't log password
+
     if (!email || !password || !surname || !postalCode) {
       return res.status(400).json({ error: 'Todos los campos son obligatorios' });
     }
@@ -254,13 +257,16 @@ app.post('/api/users/register', async (req, res) => {
     };
 
     if (bcrypt) {
+      console.log('   Hashing password...');
       userProfile.passwordHash = await bcrypt.hash(password, 10);
+      console.log('   Password hashed.');
     } else {
       console.error('❌ Error: bcryptjs no está disponible.');
       return res.status(503).json({ error: 'El sistema de seguridad no está disponible. Por favor ejecute npm install.' });
     }
 
     await db.collection('users').insertOne(userProfile);
+    console.log('✅ User inserted into DB:', userId);
 
     // Send welcome email
     sendEmail(email, '¡Bienvenido a ReportaYa!', `

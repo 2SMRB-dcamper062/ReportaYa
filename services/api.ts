@@ -12,20 +12,37 @@ const SESSION_KEY = 'currentUser';
 
 // Helper for API calls
 async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-        ...options,
-        headers: {
-            'Content-Type': 'application/json',
-            ...options.headers,
-        },
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
 
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Error: ${response.status}`);
+    try {
+        console.log(`📡 Fetching: ${endpoint}`);
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+            ...options,
+            signal: controller.signal,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers,
+            },
+        });
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+            console.error(`❌ API Error ${response.status} at ${endpoint}`);
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `Error: ${response.status}`);
+        }
+
+        console.log(`✅ API Success: ${endpoint}`);
+        return response.json();
+    } catch (error: any) {
+        clearTimeout(timeoutId);
+        console.error(`❌ API Request Failed: ${error.message}`);
+        if (error.name === 'AbortError') {
+            throw new Error('La solicitud tardó demasiado. Comprueba tu conexión o el servidor.');
+        }
+        throw error;
     }
-
-    return response.json();
 }
 
 // ─── USER OPERATIONS ──────────────────────────────────────────────
