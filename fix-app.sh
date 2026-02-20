@@ -11,13 +11,15 @@ stty sane 2>/dev/null
 # Función para apagar todo limpiamente
 trap 'printf "\n🛑 Deteniendo ReportaYa...\n"; sudo fuser -k 3000/tcp 3001/tcp 27017/tcp 2>/dev/null; stty sane; exit' SIGINT SIGTERM
 
-echo "----------------------------------------------------"
-echo "🔧 ARRANCANDO REPORTAYA"
-echo "----------------------------------------------------"
+# 0. Asegurar propiedad y permisos (Fix radical 777)
+echo "🔒 Desbloqueando permisos de archivos..."
+CURRENT_USER=$(whoami)
+# Si estamos en /home/ubuntu, forzamos ese usuario, si no, el actual.
+TARGET_USER=${SUDO_USER:-$CURRENT_USER}
 
-# 0. Asegurar propiedad (Fix radical para EACCES)
-echo "🔒 Verificando propiedad de archivos..."
-sudo chown -R $USER:$USER /home/ubuntu/ReportaYa 2>/dev/null || sudo chown -R $USER:$USER .
+sudo chown -R $TARGET_USER:$TARGET_USER /home/ubuntu/ReportaYa 2>/dev/null || sudo chown -R $TARGET_USER:$TARGET_USER .
+sudo chmod -R 755 .
+[ -d "node_modules" ] && sudo chmod -R 777 node_modules  # Permiso total a dependencias
 
 # 1. Limpieza de procesos y carpetas conflictivas
 echo "[1/4] Liberando puertos y limpiando temporales..."
@@ -26,19 +28,13 @@ sudo pkill -9 -f node >/dev/null 2>&1
 sudo pkill -9 -f vite >/dev/null 2>&1
 
 # Solución EACCES definitiva
-echo "🧹 Limpiando cachés y temporales de Vite..."
+echo "🧹 Eliminando carpetas temporales de Vite..."
 sudo rm -rf node_modules/.vite node_modules/.vite-temp .vite_cache >/dev/null 2>&1
-sudo find node_modules -name ".vite*" -exec rm -rf {} + >/dev/null 2>&1
-
-# 2. Restaurar permisos al usuario real
-echo "[2/4] Corrigiendo permisos de archivos..."
-REAL_USER=${SUDO_USER:-$USER}
-sudo chown -R $REAL_USER:$REAL_USER .
-sudo chmod -R 755 .
+sudo find . -name ".vite*" -exec sudo rm -rf {} + >/dev/null 2>&1
 
 # 3. Instalación de seguridad
 if [ ! -d "node_modules/express" ]; then
-    echo "📦 Instalando dependencias faltantes..."
+    echo "📦 Instalando dependencias desde cero..."
     npm install --quiet
 fi
 
