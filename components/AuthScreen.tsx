@@ -73,8 +73,11 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onClose }) => {
         onClose();
       } else if (view === 'register') {
         const newUser = await apiRegisterLocal(email, password, name, surname, postalCode);
-        onLogin(newUser);
-        onClose();
+        setSuccessMsg(t('auth.register_success') || '¡Cuenta creada! Entrando...');
+        setTimeout(() => {
+          onLogin(newUser);
+          onClose();
+        }, 1500);
       } else if (view === 'forgot') {
         await apiForgotPassword(email);
         setSuccessMsg(t('auth.reset_link_sent'));
