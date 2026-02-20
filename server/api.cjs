@@ -638,6 +638,11 @@ connectDB()
   .then(() => {
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 API ReportaYa corriendo en http://localhost:${PORT}`);
+      if (PORT != 3000) {
+        console.warn("⚠️ ALERTA: La aplicación NO está corriendo en el puerto 3000. Revise su configuración.");
+      } else {
+        console.log("✅ Aplicación corriendo correctamente en puerto 3000.");
+      }
       console.log(`📋 Endpoints disponibles:`);
       console.log(`   GET    /api/health`);
       console.log(`   GET    /api/users/:id`);

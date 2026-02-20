@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => {
       port: 3000,
       host: true,
       allowedHosts: ['reportaya.ddns.net', 'localhost'],
-      strictPort: false,
+      strictPort: true,
       proxy: {
         '/api': {
           target: 'http://localhost:3001',
