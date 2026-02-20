@@ -4,8 +4,8 @@ echo "===================================================="
 echo "🔧 SECUENCIA DE REPARACIÓN FINAL (V2.2)"
 echo "===================================================="
 
-# 1. Limpieza total de procesos previos
-echo "💀 Limpiando puertos 3000, 3001 y 27017..."
+# 1. Limpieza total de procesos y bloqueos
+echo "💀 Matando procesos antiguos..."
 sudo fuser -k 3000/tcp 3001/tcp 27017/tcp 2>/dev/null
 sudo pkill -9 -f node 2>/dev/null
 sudo pkill -9 -f mongod 2>/dev/null
@@ -13,15 +13,19 @@ sudo pkill -9 -f vite 2>/dev/null
 sudo rm -f /tmp/mongodb-27017.sock
 sudo rm -f /var/lib/mongodb/mongod.lock
 
-# 2. Reparar Permisos
-echo "🔐 Reparando permisos del sistema..."
+# 2. Arreglo de Permisos y Limpieza de Temporales
+echo "🔐 Recuperando propiedad del usuario ubuntu..."
 sudo chown -R $USER:$USER .
 sudo chmod -R 755 .
-rm -rf node_modules/.vite node_modules/.vite-temp
+rm -rf node_modules/.vite node_modules/.vite-temp dist
 
-# 3. CONFIGURACIÓN OFICIAL SMTP (GMAIL SOPORTE)
+# 3. Instalación de Dependencias (FUNDAMENTAL)
+echo "📦 Instalando librerías (esto tardará unos 2 min)..."
+npm install --no-audit --no-fund
+
+# 4. Configuración OFICIAL de Correo y Red
 PUBLIC_IP=$(curl -s ifconfig.me || echo "127.0.0.1")
-echo "📝 Escribiendo configuración oficial en .env..."
+echo "📝 Configurando .env con SMTP Soporte..."
 cat <<EOT > .env
 MONGO_URI=mongodb://127.0.0.1:27017/reportaya
 DB_NAME=reportaya
@@ -33,23 +37,24 @@ SMTP_USER=soporte.reportaya@gmail.com
 SMTP_PASS=wemodqbgfcmjruot
 EOT
 
-# 4. Iniciar MongoDB
+# 5. Iniciar MongoDB Core
 echo "🍃 Despertando base de datos..."
 sudo systemctl start mongodb 2>/dev/null || sudo systemctl start mongod 2>/dev/null
-sleep 3
+sleep 2
 if ! pgrep -x "mongod" > /dev/null; then
     sudo mkdir -p /var/lib/mongodb
     sudo chown -R $USER:$USER /var/lib/mongodb
     mongod --fork --logpath /tmp/mongodb.log --dbpath /var/lib/mongodb --bind_ip 127.0.0.1
 fi
 
-# 5. Build y Seed
-echo "🌱 Poblando datos de ciudadanos..."
+# 6. Sincronización y Compilación
+echo "🌱 Poblado de usuarios..."
 npm run seed:users
-echo "🏗️ Compilando Frontend oficial..."
+echo "🏗️ Generando archivos de producción..."
 npm run build
 
 echo "===================================================="
-echo "🚀 APLICACIÓN REAL Y FUNCIONAL LANZADA"
+echo "🚀 SISTEMA REAL PUBLICADO CON ÉXITO"
 echo "===================================================="
-npm run dev:server
+# Usamos el comando directo para evitar fallos de scripts en package.json
+npx concurrently -n API,VITE -c cyan,magenta "cross-env PORT=3001 node server/api.cjs" "npx vite --port 3000 --host 0.0.0.0"
