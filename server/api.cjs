@@ -87,7 +87,7 @@ const crypto = require('crypto');
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017';
 const DB_NAME = process.env.DB_NAME || 'reportaya';
 const IS_PROD = process.env.NODE_ENV === 'production';
-const PORT = process.env.API_PORT || (IS_PROD ? 3000 : 3001);
+const PORT = process.env.PORT || 3000;
 
 const app = express();
 
@@ -272,7 +272,7 @@ app.post('/api/users/register', async (req, res) => {
         <p>Correo electrónico: <strong>${email}</strong></p>
         
         <p>Si no creaste esta cuenta o te olvidas de la contraseña, por favor, cambia tus credenciales de acceso:</p>
-        <p><a href="http://localhost:5173/?view=forgot" style="color:#007bff;text-decoration:underline;">Cambiar contraseña</a></p>
+        <p><a href="http://localhost:3000/?view=forgot" style="color:#007bff;text-decoration:underline;">Cambiar contraseña</a></p>
 
         <hr style="border:none;border-top:1px solid #eee;">
         
@@ -411,7 +411,7 @@ app.post('/api/users/forgot-password', async (req, res) => {
       { $set: { resetToken, resetExpires } }
     );
 
-    const domain = process.env.DOMAIN || 'http://localhost:5173';
+    const domain = process.env.DOMAIN || 'http://localhost:3000';
     const resetUrl = `${domain}/?reset=${resetToken}`;
 
     sendEmail(email, 'Restablecer contraseña — ReportaYa', `
@@ -636,7 +636,7 @@ app.post('/create-checkout-session', async (req, res) => {
 // ─── START SERVER ─────────────────────────────────────────────────
 connectDB()
   .then(() => {
-    app.listen(PORT, () => {
+    app.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 API ReportaYa corriendo en http://localhost:${PORT}`);
       console.log(`📋 Endpoints disponibles:`);
       console.log(`   GET    /api/health`);
