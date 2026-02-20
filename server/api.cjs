@@ -699,25 +699,9 @@ app.post('/create-checkout-session', async (req, res) => {
 connectDB()
   .then(() => {
     app.listen(PORT, '0.0.0.0', () => {
-      console.log(`🚀 API ReportaYa corriendo en http://localhost:${PORT}`);
-      if (PORT != 3000) {
-        console.warn("⚠️ ALERTA: La aplicación NO está corriendo en el puerto 3000. Revise su configuración.");
-      } else {
-        console.log("✅ Aplicación corriendo correctamente en puerto 3000.");
-      }
-      console.log(`📋 Endpoints disponibles:`);
-      console.log(`   GET    /api/health`);
-      console.log(`   GET    /api/users/:id`);
-      console.log(`   GET    /api/users/by-email/:email`);
-      console.log(`   PUT    /api/users/:id`);
-      console.log(`   POST   /api/users/login`);
-      console.log(`   POST   /api/users/register`);
-      console.log(`   GET    /api/reports`);
-      console.log(`   GET    /api/reports/:id`);
-      console.log(`   POST   /api/reports`);
-      console.log(`   PUT    /api/reports/:id`);
-      console.log(`   DELETE /api/reports/:id`);
-      console.log(`   POST   /create-checkout-session`);
+      console.log(`🚀 API activa en puerto ${PORT}`);
+      console.log(`📋 API endpoints listos para recibir peticiones`);
+      console.log(`🌐 Acceso Web: http://${process.env.DOMAIN || 'localhost'}`);
     });
   })
   .catch(err => {
