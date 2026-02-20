@@ -1,6 +1,6 @@
 
 <div align="center">
-  <img src="https://via.placeholder.com/150x50?text=ReportaYa" alt="ReportaYa Logo" height="80">
+  <img src="./public/logo.png" alt="ReportaYa Logo" height="200">
 
   # ReportaYa 1.1 🏛️
 
@@ -74,58 +74,11 @@ cd ReportaYa
 
 ### 2. Instalar y Configurar (Rápido)
 
-Si estás en **Ubuntu/Linux**, puedes configurar y arreglar todo el entorno (permisos, base de datos y dependencias) con un solo comando:
+Si estás en **Ubuntu/Linux**, puedes instalador e iniciar la aplicación con un solo comando:
 ```bash
 chmod +x fix-app.sh && ./fix-app.sh
 ```
-*Este script automatiza la instalación de MongoDB, corrige errores de permisos (`EACCES`), puebla la base de datos y lanza la aplicación.*
-
-### 3. Configuración Manual (Opcional)
-Si prefieres hacerlo paso a paso, consulta el script `fix-app.sh` para ver los comandos manuales.
-Crea un archivo `.env` en la raíz (puedes copiar `.env.example` si existe) con:
-```env
-MONGODB_URI=mongodb://localhost:27017/reportaya
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=tu-email@gmail.com
-SMTP_PASS=tu-app-password
-DOMAIN=http://localhost:5173
-```
-
-### 4. Iniciar la App (Desarrollo / Hot Reload)
-
-> ⚠️ **Importante**: Asegúrate de que **MongoDB** esté ejecutándose en tu sistema (`mongod`) antes de iniciar.
-
-Puedes ejecutar cualquiera de los dos comandos:
-```bash
-npm start
-# O bien:
-npm run dev
-```
-
-Ambos harán lo mismo:
-1. Iniciar el Frontend en `http://localhost:5173`
-2. Iniciar el Backend en `http://localhost:3000`
-
-### 5. Producción (Opcional)
-Si quieres probar la versión compilada como en producción:
-1. `npm run build`
-2. `node server/api.cjs`
-(Esto correrá todo en `http://localhost:3000`).
-
----
-
-## 🤝 Contribuir
-
-¡Las contribuciones son bienvenidas! Si deseas mejorar ReportaYa:
-1. Haz un Fork del proyecto.
-2. Crea una rama (`git checkout -b feature/nueva-funcionalidad`).
-3. Commit tus cambios (`git commit -m 'Añadir nueva funcionalidad'`).
-4. Push a la rama (`git push origin feature/nueva-funcionalidad`).
-5. Abre un Pull Request.
-
----
 
 <div align="center">
-  Hecho con ❤️ en Sevilla
+  Proyecto realizado por el equipo de ReportaYa
 </div>
