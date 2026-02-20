@@ -29,7 +29,7 @@ const dict: Record<Locale, Record<string, string>> = {
         'auth.email': 'Correo electrónico', 'auth.password': 'Contraseña',
         'auth.confirm_password': 'Confirmar Contraseña', 'auth.name': 'Nombre Completo',
         'auth.forgot': '¿Olvidaste tu contraseña?', 'auth.loading': 'Cargando...',
-        'auth.enter': 'Entrar →', 'auth.fill_required': 'Por favor, rellena todos los campos obligatorios.',
+        'auth.enter': 'Entrar →', 'auth.fill_required': 'Por favor, rellena todos los campos.',
         'auth.passwords_no_match': 'Las contraseñas no coinciden.', 'auth.error': 'Error en la autenticación',
         'auth.password_weak': 'Contraseña débil',
         'auth.name_placeholder': 'Tu nombre', 'auth.email_placeholder': 'correo@ejemplo.com',
