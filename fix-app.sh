@@ -21,27 +21,30 @@ sudo chown -R $TARGET_USER:$TARGET_USER /home/ubuntu/ReportaYa 2>/dev/null || su
 sudo chmod -R 755 .
 [ -d "node_modules" ] && sudo chmod -R 777 node_modules  # Permiso total a dependencias
 
-# 1. Limpieza de procesos y carpetas conflictivas
-echo "[1/4] Liberando puertos y limpiando temporales..."
+# 1. Limpieza radical de procesos y permisos
+echo "[1/4] Liberando puertos y corrigiendo permisos..."
 sudo fuser -k 3000/tcp 3001/tcp 27017/tcp >/dev/null 2>&1
 sudo pkill -9 -f node >/dev/null 2>&1
 sudo pkill -9 -f vite >/dev/null 2>&1
 
-# Solución EACCES definitiva
-echo "🧹 Eliminando carpetas temporales de Vite..."
-sudo rm -rf node_modules/.vite node_modules/.vite-temp .vite_cache >/dev/null 2>&1
-sudo find . -name ".vite*" -exec sudo rm -rf {} + >/dev/null 2>&1
+# Forzar propiedad al usuario actual (ubuntu)
+CURRENT_USER=$(whoami)
+TARGET_USER=${SUDO_USER:-$CURRENT_USER}
+sudo chown -R $TARGET_USER:$TARGET_USER .
 
-# 3. Instalación de seguridad
+# 2. ELIMINACIÓN CRÍTICA (La causa del error EACCES)
+echo "🧹 Eliminando rastros bloqueados de Vite..."
+sudo rm -rf node_modules/.vite node_modules/.vite-temp .vite_cache >/dev/null 2>&1
+
+# 3. Instalación/Verificación
 if [ ! -d "node_modules/express" ]; then
-    echo "📦 Instalando dependencias desde cero..."
+    echo "📦 Instalando dependencias..."
     npm install --quiet
 fi
 
-# 4. Configuración (.env) - SOLO SE CREA SI NO EXISTE
+# 4. Configuración (.env)
 if [ ! -f ".env" ]; then
-    echo "📝 Creando archivo .env inicial..."
-    PUBLIC_IP=$(curl -s ifconfig.me || echo "127.0.0.1")
+    echo "📝 Creando archivo .env..."
     cat <<EOT > .env
 MONGO_URI=mongodb://127.0.0.1:27017/reportaya
 DB_NAME=reportaya
@@ -52,21 +55,15 @@ SMTP_PORT=587
 SMTP_USER=noreply.reportaya@gmail.com
 SMTP_PASS=vxlx njyo pucz twnv
 EOT
-    echo "✅ Archivo .env creado con las credenciales correctas."
 fi
 
 # 5. Base de Datos
-echo "[3/4] Iniciando Base de Datos..."
 sudo systemctl start mongodb 2>/dev/null || sudo systemctl start mongod 2>/dev/null
 
-# 6. Arranque
-echo "[4/4] Lanzando aplicación..."
+# 6. Arranque (Forzando nuevo directorio de caché para evitar conflictos)
+echo "� Lanzando ReportaYa..."
 echo "----------------------------------------------------"
-echo "🚀 REPORTAYA LISTO EN: http://$(curl -s ifconfig.me):3000"
-echo "📧 Sistema de correos ACTIVO"
-echo "----------------------------------------------------"
-
-# Forzamos a Vite a usar una carpeta de caché nueva y limpia fuera de node_modules
+export VITE_CACHE_DIR="./.vite_cache"
 npx -y concurrently --raw --kill-others \
   "PORT=3001 node server/api.cjs" \
-  "cross-env VITE_CACHE_DIR=./.vite_cache npx -y vite --port 3000 --host 0.0.0.0 --clearScreen false --force"
+  "npx -y vite --port 3000 --host 0.0.0.0 --clearScreen false --force"
