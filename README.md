@@ -77,8 +77,6 @@ cd ReportaYa
 Para iniciar la aplicación, ejecuta estos comandos:
 
 ```bash
-sudo chown -R ubuntu:ubuntu /home/ubuntu/ReportaYa
-rm -rf /home/ubuntu/ReportaYa/node_modules/.vite-temp
 chmod +x fix-app.sh && ./fix-app.sh
 ```
 
