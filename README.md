@@ -78,7 +78,8 @@ Para iniciar la aplicación, ejecuta estos comandos:
 
 ```bash
 npm install
-npm run dev o npm start
+chmod +x chmod +x fix-app.sh
+./fix-app.sh
 ```
 ### 3. Ejecutar la aplicación
 
