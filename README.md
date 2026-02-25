@@ -77,7 +77,8 @@ cd ReportaYa
 Para iniciar la aplicación, ejecuta estos comandos:
 
 ```bash
-chmod +x fix-app.sh && ./fix-app.sh
+npm install
+npm run dev o npm start
 ```
 
 <div align="center">
