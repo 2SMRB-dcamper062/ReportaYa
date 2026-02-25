@@ -154,12 +154,29 @@ export async function apiGetReports(): Promise<Issue[]> {
     return await apiFetch<Issue[]>('/reports');
 }
 
-/** Save a new report */
+/** Save a new report (longer timeout for image uploads) */
 export async function apiSaveReport(report: Issue): Promise<void> {
-    await apiFetch('/reports', {
-        method: 'POST',
-        body: JSON.stringify(report),
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s for large images
+    try {
+        const response = await fetch(`${API_BASE_URL}/reports`, {
+            method: 'POST',
+            signal: controller.signal,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(report),
+        });
+        clearTimeout(timeoutId);
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `Error: ${response.status}`);
+        }
+    } catch (error: any) {
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+            throw new Error('La subida tardó demasiado. Intenta con una imagen más pequeña.');
+        }
+        throw error;
+    }
 }
 
 /** Update an existing report */

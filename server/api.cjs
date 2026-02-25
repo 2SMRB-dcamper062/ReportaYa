@@ -30,8 +30,14 @@ try {
   if (fs.existsSync(envPath)) {
     const envContent = fs.readFileSync(envPath, 'utf8');
     envContent.split('\n').forEach(line => {
-      const parts = line.split('=');
-      if (parts.length === 2) process.env[parts[0].trim()] = parts[1].trim();
+      const trimmed = line.replace(/\r/g, '').trim();
+      if (!trimmed || trimmed.startsWith('#')) return;
+      const idx = trimmed.indexOf('=');
+      if (idx > 0) {
+        const key = trimmed.substring(0, idx).trim();
+        const value = trimmed.substring(idx + 1).trim();
+        if (key) process.env[key] = value;
+      }
     });
     console.log('✅ Variables de entorno cargadas desde .env');
   }
@@ -172,7 +178,7 @@ const corsOptions = {
   credentials: true
 };
 app.use(cors(corsOptions));
-app.use(express.json({ limit: '10mb' })); // Reduced limit for security
+app.use(express.json({ limit: '50mb' })); // Allow large base64 images
 app.use((req, res, next) => {
   console.log(`📡 [${new Date().toISOString()}] ${req.method} ${req.url}`);
   next();

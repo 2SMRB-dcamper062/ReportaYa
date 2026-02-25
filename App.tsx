@@ -845,58 +845,52 @@ const App = () => {
       updatedAt: new Date().toISOString()
     };
 
-    console.log('Creando nuevo reporte:', newIssue); // Log para depuración
+    console.log('Creando nuevo reporte:', newIssue);
 
     try {
+      // Add to local state immediately for responsive UI
       setIssues(prev => [...prev, newIssue]);
 
-      // Persist report in background so UI/navigation isn't blocked by large image uploads
-      apiSaveReport(newIssue)
-        .then(() => {
-          console.log('Reporte guardado exitosamente en MongoDB.');
-          // Translate in the background after saving
-          if (newIssue.title && newIssue.description) {
-            translateReport(newIssue.title, newIssue.description)
-              .then(translations => {
-                const translatedIssue = { ...newIssue, translations };
-                // Update local state with translations
-                setIssues(prev => prev.map(i => i.id === newIssue.id ? translatedIssue : i));
-                // Persist translations to DB
-                apiUpdateReport(newIssue.id, { translations }).catch(err =>
-                  console.error('Error guardando traducciones:', err)
-                );
-              })
-              .catch(err => console.error('Error traduciendo reporte:', err));
-          }
-        })
-        .catch(err => console.error('Error al guardar el reporte (background):', err));
+      // Actually save to database — AWAIT so we know if it fails
+      await apiSaveReport(newIssue);
+      console.log('✅ Reporte guardado exitosamente en MongoDB.');
 
-      // Otorgar puntos y experiencia al enviar el reporte (no bloqueante)
+      // Translate in the background after saving (non-essential)
+      if (newIssue.title && newIssue.description) {
+        translateReport(newIssue.title, newIssue.description)
+          .then(translations => {
+            const translatedIssue = { ...newIssue, translations };
+            setIssues(prev => prev.map(i => i.id === newIssue.id ? translatedIssue : i));
+            apiUpdateReport(newIssue.id, { translations }).catch(err =>
+              console.error('Error guardando traducciones:', err)
+            );
+          })
+          .catch(err => console.error('Error traduciendo reporte:', err));
+      }
+
+      // Award points & experience
       if (user) {
-        // Puntos normales por reporte
         const newPoints = (user.points || 0) + 10;
         const updatedUser = {
           ...user,
           points: newPoints,
           experience: (user.experience || 0) + 20,
         };
-
-        // Update UI immediately
         setUser(updatedUser);
-
-        // Persist in background (don't await to avoid blocking map navigation)
         apiSaveUser(updatedUser).catch(err => console.error('Error guardando perfil de usuario:', err));
       }
 
-      // Navegar al mapa y enfocar la incidencia creada.
-      // Retrasamos el setFocusedIssue para asegurarnos de que IssueMap haya creado los marcadores
+      // Navigate to map and focus the new issue
       setActiveTab('map');
       setFocusedIssue(null);
       setTimeout(() => {
         setFocusedIssue(newIssue);
       }, 600);
-    } catch (error) {
-      console.error('Error al procesar el reporte en el cliente:', error);
+    } catch (error: any) {
+      console.error('❌ Error al guardar el reporte:', error);
+      // Remove from local state since it didn't save
+      setIssues(prev => prev.filter(i => i.id !== newIssue.id));
+      alert('Error al guardar el reporte: ' + (error.message || 'Error desconocido. Comprueba tu conexión.'));
     }
   };
 
