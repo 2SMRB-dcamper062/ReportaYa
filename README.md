@@ -2,7 +2,7 @@
 <div align="center">
   <img src="./public/logo.png" alt="ReportaYa Logo" height="200">
 
-  # ReportaYa 🏛️
+  # ReportaYa 1.1 🏛️
 
   **La plataforma ciudadana de Sevilla**
 
