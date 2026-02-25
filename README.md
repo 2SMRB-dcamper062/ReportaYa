@@ -77,7 +77,16 @@ cd ReportaYa
 Para iniciar la aplicación, ejecuta estos comandos:
 
 ```bash
-chmod +x fix-app.sh && ./fix-app.sh
+npm install
+chmod +x chmod +x fix-app.sh
+./fix-app.sh
+```
+### 3. Ejecutar la aplicación
+
+Para abrir la aplicación en el navegador, escribe:
+
+```bash
+https://reportaya.ddns.net/
 ```
 
 <div align="center">
