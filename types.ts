@@ -40,7 +40,7 @@ export interface Issue {
   translations?: Record<string, { title: string; description: string }>; // Auto-translated content per locale
 }
 
-export type ItemType = 'frame' | 'background' | 'badge';
+export type ItemType = 'frame' | 'background' | 'badge' | 'collaboration';
 
 export interface ShopItem {
   id: string;

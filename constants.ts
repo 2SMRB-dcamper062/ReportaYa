@@ -18,7 +18,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'frame_betis',
     name: 'Verdiblanco',
     description: 'Para los fieles de Heliópolis.',
-    cost: 100,
+    cost: 300,
     type: 'frame',
     previewValue: 'border-green-600 ring-4 ring-white border-double'
   },
@@ -26,7 +26,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'frame_seville',
     name: 'Rojo Sevilla',
     description: 'Para los fieles de Nervión.',
-    cost: 100,
+    cost: 300,
     type: 'frame',
     previewValue: 'border-red-700 ring-4 ring-white border-double'
   },
@@ -34,7 +34,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'frame_gold',
     name: 'Marco Oro',
     description: 'Un toque de elegancia para ciudadanos ejemplares.',
-    cost: 250,
+    cost: 750,
     type: 'frame',
     previewValue: 'border-yellow-400 ring-4 ring-yellow-200'
   },
@@ -42,7 +42,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'frame_feria',
     name: 'Feria de Abril',
     description: 'Estilo farolillos y lunares.',
-    cost: 350,
+    cost: 1050,
     type: 'frame',
     previewValue: 'border-red-500 ring-4 ring-green-500 border-dashed'
   },
@@ -50,7 +50,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'frame_nazareno',
     name: 'Semana Santa',
     description: 'Solemne morado nazareno.',
-    cost: 450,
+    cost: 1350,
     type: 'frame',
     previewValue: 'border-purple-800 ring-4 ring-purple-300'
   },
@@ -58,7 +58,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'frame_triana',
     name: 'Cerámica Triana',
     description: 'Inspirado en los azulejos del puente.',
-    cost: 600,
+    cost: 1800,
     type: 'frame',
     previewValue: 'border-blue-600 ring-4 ring-yellow-400 border-dotted'
   },
@@ -66,9 +66,91 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'frame_diamond',
     name: 'Diamante VIP',
     description: 'Solo para los ciudadanos más activos.',
-    cost: 1000,
+    cost: 3000,
     type: 'frame',
     previewValue: 'border-cyan-300 ring-4 ring-cyan-100 shadow-[0_0_15px_rgba(34,211,238,0.8)]'
+  },
+  {
+    id: 'frame_isabel',
+    name: 'Puente de Triana',
+    description: 'Inspirado en los arcos del puente de hierro.',
+    cost: 1500,
+    type: 'frame',
+    previewValue: 'border-slate-700 ring-2 ring-slate-400 border-double rounded-none'
+  },
+  {
+    id: 'frame_alfalfa',
+    name: 'Azulejo Alfalfa',
+    description: 'Patrón cerámico del centro histórico.',
+    cost: 1200,
+    type: 'frame',
+    previewValue: 'border-blue-500 ring-4 ring-emerald-100 border-dotted'
+  },
+  {
+    id: 'frame_maestranza',
+    name: 'Albero Maestranza',
+    description: 'Colores de la plaza de toros.',
+    cost: 900,
+    type: 'frame',
+    previewValue: 'border-yellow-600 ring-4 ring-white border-solid'
+  },
+  {
+    id: 'frame_metropol',
+    name: 'Setas de Sevilla',
+    description: 'Diseño orgánico de madera.',
+    cost: 2000,
+    type: 'frame',
+    previewValue: 'border-amber-100 ring-2 ring-amber-300 border-dashed rounded-xl'
+  },
+  {
+    id: 'frame_solid_neon',
+    name: 'Azul Neón',
+    description: 'Borde sólido brillante.',
+    cost: 500,
+    type: 'frame',
+    previewValue: 'border-[6px] border-cyan-400 shadow-[0_0_10px_#22d3ee]'
+  },
+  {
+    id: 'frame_solid_ruby',
+    name: 'Rojo Rubí',
+    description: 'Elegancia en color sólido.',
+    cost: 500,
+    type: 'frame',
+    previewValue: 'border-[6px] border-red-600 shadow-[0_0_10px_#dc2626]'
+  },
+  {
+    id: 'frame_grad_sunset',
+    name: 'Atardecer',
+    description: 'Gradiente cálido de Sevilla.',
+    cost: 1200,
+    type: 'frame',
+    previewValue: 'border-[6px] border-transparent bg-gradient-to-r from-orange-400 to-red-500 bg-clip-border'
+  },
+  {
+    id: 'frame_grad_ocean',
+    name: 'Océano',
+    description: 'Gradiente refrescante.',
+    cost: 1200,
+    type: 'frame',
+    previewValue: 'border-[6px] border-transparent bg-gradient-to-r from-blue-400 to-emerald-500 bg-clip-border'
+  },
+  {
+    id: 'frame_mix_royal',
+    name: 'Realeza',
+    description: 'Mezcla de oro y púrpura.',
+    cost: 2500,
+    type: 'frame',
+    premium: true,
+    previewValue: 'border-[6px] border-purple-700 ring-4 ring-yellow-400 shadow-xl'
+  },
+  {
+    id: 'frame_mix_cyber',
+    name: 'Cyber Sevilla',
+    description: 'Estilo futurista mezclado.',
+    cost: 3000,
+    type: 'frame',
+    premium: true,
+    previewValue: 'border-[6px] border-fuchsia-500 ring-2 ring-cyan-400 border-double'
   },
 
   // --- FONDOS (BACKGROUNDS) ---
@@ -76,7 +158,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'bg_default',
     name: 'Verde Esperanza',
     description: 'Fondo Verde Esperanza.',
-    cost: 10,
+    cost: 50,
     type: 'background',
     previewValue: 'bg-gradient-to-r from-green-500 to-green-700'
   },
@@ -84,7 +166,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'bg_alameda',
     name: 'Atardecer Plaza España',
     description: 'Atardecer Plaza España.',
-    cost: 150,
+    cost: 450,
     type: 'background',
     previewValue: "bg-[url('/atardecer-plaza-espana.jpg')] bg-cover bg-center"
   },
@@ -92,7 +174,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'bg_guadalquivir',
     name: 'Río Guadalquivir',
     description: 'Frescura azul verdosa.',
-    cost: 250,
+    cost: 750,
     type: 'background',
     previewValue: "bg-[url('/rio_guadalquivir.jpg')] bg-cover bg-center"
   },
@@ -100,7 +182,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'bg_azahar',
     name: 'Catedral de Sevilla',
     description: 'Catedral de Sevilla.',
-    cost: 300,
+    cost: 900,
     type: 'background',
     previewValue: "bg-[url('/catedral.jpg')] bg-cover bg-center"
   },
@@ -108,7 +190,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'bg_fondo_inicio',
     name: 'Fondo Inicio',
     description: 'Imagen de cabecera del sitio.',
-    cost: 200,
+    cost: 600,
     type: 'background',
     previewValue: "bg-[url('/fondo_inicio.jpg')] bg-cover bg-center"
   },
@@ -116,7 +198,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'bg_mosaico',
     name: 'Feria de Sevilla',
     description: 'Feria de Sevilla.',
-    cost: 150,
+    cost: 450,
     type: 'background',
     previewValue: "bg-[url('/feria_sevilla.jpg')] bg-cover bg-center"
   },
@@ -124,7 +206,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'bg_cielo',
     name: 'Cielo Sevillano',
     description: 'Vistas de la ciudad y del cielo.',
-    cost: 120,
+    cost: 360,
     type: 'background',
     previewValue: "bg-[url('/cielo.jpg')] bg-cover bg-center"
   },
@@ -132,7 +214,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'bg_plaza_alba',
     name: 'Plaza al Alba',
     description: 'Tonos cálidos al amanecer.',
-    cost: 180,
+    cost: 540,
     type: 'background',
     previewValue: "bg-[url('/plaza_alba.jpg')] bg-cover bg-center brightness-95"
   },
@@ -140,16 +222,17 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'bg_azulejos',
     name: 'Azulejos Triana',
     description: 'Patrón inspirado en azulejos.',
-    cost: 220,
+    cost: 660,
     type: 'background',
+    premium: true,
     previewValue: "bg-[url('/azulejo_triana.jpg')] bg-cover bg-center brightness-95"
-  }
-  ,
+  },
+
   {
     id: 'bg_giralda',
     name: 'Atardecer Giralda',
     description: 'Los colores del cielo sobre la torre.',
-    cost: 500,
+    cost: 1500,
     type: 'background',
     premium: true,
     previewValue: "bg-[url('/atardecer_giralda.jpg')] bg-cover bg-center"
@@ -158,7 +241,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'bg_alcazar',
     name: 'Oro del Alcázar',
     description: 'Lujo histórico y patrones dorados.',
-    cost: 700,
+    cost: 2100,
     type: 'background',
     premium: true,
     previewValue: "bg-[url('/alcazar_patio.jpg')] bg-cover bg-center"
@@ -167,7 +250,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'bg_noche',
     name: 'Noche Sevillana',
     description: 'Elegancia nocturna bajo las estrellas.',
-    cost: 900,
+    cost: 2700,
     type: 'background',
     premium: true,
     previewValue: "bg-[url('/noche_sevillana.jpg')] bg-cover bg-center"
@@ -181,7 +264,7 @@ export const BADGE_ITEMS: ShopItem[] = [
     id: 'tag_colaborador',
     name: 'Colaborador',
     description: 'Usuario activo que colabora con su barrio.',
-    cost: 20,
+    cost: 100,
     type: 'badge',
     previewValue: 'bg-yellow-100 text-yellow-800'
   },
@@ -189,7 +272,7 @@ export const BADGE_ITEMS: ShopItem[] = [
     id: 'tag_guardian',
     name: 'Guardián de Sevilla',
     description: 'Protege y vigila tu entorno urbano.',
-    cost: 50,
+    cost: 250,
     type: 'badge',
     previewValue: 'bg-blue-100 text-blue-800'
   },
@@ -197,7 +280,7 @@ export const BADGE_ITEMS: ShopItem[] = [
     id: 'tag_mvp',
     name: 'MVP Ciudadano',
     description: 'Reconocimiento por contribuciones destacadas.',
-    cost: 120,
+    cost: 600,
     type: 'badge',
     previewValue: 'bg-purple-100 text-purple-800'
   },
@@ -205,7 +288,7 @@ export const BADGE_ITEMS: ShopItem[] = [
     id: 'tag_voluntario',
     name: 'Voluntario',
     description: 'Participa en iniciativas de barrio.',
-    cost: 30,
+    cost: 150,
     type: 'badge',
     previewValue: 'bg-green-100 text-green-800'
   },
@@ -213,34 +296,37 @@ export const BADGE_ITEMS: ShopItem[] = [
     id: 'tag_conserje',
     name: 'Conserje',
     description: 'Cuida tu entorno y reporta anomalías.',
-    cost: 15,
+    cost: 100,
     type: 'badge',
     previewValue: 'bg-gray-100 text-gray-800'
   },
-  
+
   // Etiquetas premium (solo para usuarios Premium)
   {
     id: 'tag_elite',
     name: 'Élite Ciudadana',
     description: 'Etiqueta exclusiva para usuarios Premium.',
-    cost: 450,
+    cost: 1500,
     type: 'badge',
+    premium: true,
     previewValue: 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-white'
   },
   {
     id: 'tag_embajador',
     name: 'Embajador',
     description: 'Representante activo y reconocido de la comunidad.',
-    cost: 600,
+    cost: 2000,
     type: 'badge',
+    premium: true,
     previewValue: 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white'
   },
   {
     id: 'tag_founder',
     name: 'Founder',
     description: 'Edición limitada para mecenas fundadores.',
-    cost: 1000,
+    cost: 5000,
     type: 'badge',
+    premium: true,
     previewValue: 'bg-black text-yellow-300'
   }
 ];
@@ -265,8 +351,79 @@ export const EXCLUSIVE_BADGES: ShopItem[] = [
   }
 ];
 
-// Merge badge items into SHOP_ITEMS so the shop shows them
-export const ALL_SHOP_ITEMS: ShopItem[] = [...SHOP_ITEMS, ...BADGE_ITEMS];
+// --- COLABORACIONES CON EMPRESAS DE SEVILLA ---
+export const COLLAB_ITEMS: ShopItem[] = [
+  {
+    id: 'collab_tussam',
+    name: 'Bonobús Tussam',
+    description: 'Recarga de 7€ para tu tarjeta de transporte Tussam.',
+    cost: 5000,
+    type: 'collaboration',
+    previewValue: 'bg-emerald-600 text-white'
+  },
+  {
+    id: 'collab_lipasam',
+    name: 'Vale Lipasam',
+    description: 'Cupón de descuento de 5€ en servicios asociados.',
+    cost: 3000,
+    type: 'collaboration',
+    previewValue: 'bg-orange-600 text-white'
+  },
+  {
+    id: 'collab_emasesa',
+    name: 'Descuento Emasesa',
+    description: 'Descuento de 6€ en tu próxima factura del agua.',
+    cost: 4000,
+    type: 'collaboration',
+    previewValue: 'bg-blue-700 text-white'
+  },
+  {
+    id: 'collab_sevici',
+    name: 'Mes Sevici',
+    description: 'Suscripción gratuita de 1 mes al servicio Sevici.',
+    cost: 2500,
+    type: 'collaboration',
+    previewValue: 'bg-red-600 text-white'
+  },
+  {
+    id: 'collab_mercado',
+    name: 'Mercado de Triana',
+    description: 'Bono de 10€ para compras en el Mercado de Triana.',
+    cost: 7000,
+    type: 'collaboration',
+    previewValue: 'bg-amber-700 text-white'
+  },
+  {
+    id: 'collab_alcazar',
+    name: 'Descuento Alcázar',
+    description: 'Entrada reducida para residentes en el Real Alcázar.',
+    cost: 2000,
+    type: 'collaboration',
+    premium: true,
+    previewValue: 'bg-yellow-800 text-white'
+  },
+  {
+    id: 'collab_catedral',
+    name: 'Visita Catedral',
+    description: 'Pase prioritario para la Catedral de Sevilla.',
+    cost: 3500,
+    type: 'collaboration',
+    premium: true,
+    previewValue: 'bg-neutral-800 text-white'
+  },
+  {
+    id: 'collab_isla_magica',
+    name: 'Bono Isla Mágica',
+    description: '10€ de descuento en tu entrada a Isla Mágica.',
+    cost: 6000,
+    type: 'collaboration',
+    premium: true,
+    previewValue: 'bg-sky-500 text-white'
+  }
+];
+
+// Merge badge and collab items into SHOP_ITEMS so the shop shows them
+export const ALL_SHOP_ITEMS: ShopItem[] = [...SHOP_ITEMS, ...BADGE_ITEMS, ...COLLAB_ITEMS];
 
 export const MOCK_ISSUES: Issue[] = [
   {
@@ -413,5 +570,5 @@ export const LEVEL_BADGES: ShopItem[] = [
 ];
 
 // Cost in points to unlock Premium via in-app points purchase
-// Set to 500 points for in-app purchase with points
-export const PREMIUM_COST_POINTS = 500;
+// Set to 2000 points for in-app purchase with points
+export const PREMIUM_COST_POINTS = 2000;

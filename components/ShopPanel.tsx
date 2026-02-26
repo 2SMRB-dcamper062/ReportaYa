@@ -1,10 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { User, ShopItem } from '../types';
-import { ALL_SHOP_ITEMS } from '../constants';
-import { ShoppingBag, Lock, Check, Layout, Star, Crown, CreditCard, Trophy, Gift, Info } from 'lucide-react';
+import { ALL_SHOP_ITEMS, PREMIUM_COST_POINTS } from '../constants';
+import {
+  ShoppingBag,
+  Lock,
+  Check,
+  Layout,
+  Star,
+  Crown,
+  CreditCard,
+  Trophy,
+  Gift,
+  Info,
+  Coins,
+  ChevronRight,
+  Sparkles,
+  ArrowRight,
+  Zap,
+  X
+} from 'lucide-react';
 import { useLocale } from '../i18n';
-
-const PREMIUM_COST_POINTS = 500;
 
 interface ShopPanelProps {
   user: User;
@@ -16,7 +31,7 @@ interface ShopPanelProps {
 
 const ShopPanel: React.FC<ShopPanelProps> = ({ user, onPurchase, onEquip, onBuyPremium, onStartPremiumCheckout }) => {
   const { t } = useLocale();
-  const [activeTab, setActiveTab] = useState<'frame' | 'background' | 'badge'>('frame');
+  const [activeTab, setActiveTab] = useState<'frame' | 'background' | 'badge' | 'collaboration'>('frame');
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [modalAnimateIn, setModalAnimateIn] = useState(false);
   const [showPointsModal, setShowPointsModal] = useState(false);
@@ -24,17 +39,15 @@ const ShopPanel: React.FC<ShopPanelProps> = ({ user, onPurchase, onEquip, onBuyP
 
   const filteredItems = ALL_SHOP_ITEMS.filter(item => item.type === activeTab);
 
-  // Helper to determine if an item is "Premium" based on cost
-  const isPremium = (cost: number) => cost >= 400;
+  // Helper to determine if an item is "Premium"
+  const isPremiumItem = (item: ShopItem) => !!item.premium;
 
   // Trigger animation state when modal opens
   useEffect(() => {
     if (showPremiumModal) {
-      // small delay to ensure transition classes apply
       const timeout = setTimeout(() => setModalAnimateIn(true), 10);
       return () => clearTimeout(timeout);
     }
-    // when showPremiumModal becomes false we keep modalAnimateIn false
     setModalAnimateIn(false);
   }, [showPremiumModal]);
 
@@ -118,7 +131,8 @@ const ShopPanel: React.FC<ShopPanelProps> = ({ user, onPurchase, onEquip, onBuyP
               return (
                 <button
                   onClick={() => setShowPremiumModal(true)}
-                  className={`px-5 py-2 rounded-full font-bold shadow-lg hover:scale-105 transform transition ${isPremiumUser ? 'bg-white/10 text-yellow-300' : 'bg-yellow-400 text-indigo-900'}`}
+                  className={`px-5 py-2 rounded-full font-bold shadow-lg hover:scale-105 transform transition ${isPremiumUser ? 'bg-white/10 text-yellow-300' : 'bg-yellow-400 text-indigo-900'
+                    }`}
                 >
                   {isPremiumUser ? t('shop.my_benefits') : t('shop.get_premium')}
                 </button>
@@ -158,6 +172,15 @@ const ShopPanel: React.FC<ShopPanelProps> = ({ user, onPurchase, onEquip, onBuyP
           >
             <Trophy size={18} /> {t('shop.tab_badges')}
           </button>
+          <button
+            onClick={() => setActiveTab('collaboration')}
+            className={`px-6 py-2.5 rounded-full text-sm font-bold flex items-center gap-2 transition-all duration-300 ${activeTab === 'collaboration'
+              ? 'bg-primary text-white shadow-md transform scale-105'
+              : 'text-gray-500 dark:text-slate-300 hover:text-primary hover:bg-gray-50 dark:hover:bg-slate-800/60'
+              }`}
+          >
+            <Gift size={18} /> {t('shop.tab_collabs')}
+          </button>
         </div>
       </div>
 
@@ -169,10 +192,8 @@ const ShopPanel: React.FC<ShopPanelProps> = ({ user, onPurchase, onEquip, onBuyP
             ? user.equippedFrame === item.id
             : user.equippedBackground === item.id;
           const canAfford = (user.points || 0) >= item.cost;
-          const premium = isPremium(item.cost);
-          const isLocked = premium && !user.premium;
+          const premium = isPremiumItem(item);
 
-          // Calculate level safely
           const experience = user.experience || 0;
           const userLevel = Math.floor(experience / 100) + 1;
           const isLevelLocked = (item.minLevel || 0) > userLevel;
@@ -190,14 +211,19 @@ const ShopPanel: React.FC<ShopPanelProps> = ({ user, onPurchase, onEquip, onBuyP
               )}
 
               {/* Preview Area */}
-              <div className={`h-40 relative flex items-center justify-center overflow-hidden ${premium ? 'bg-slate-50 dark:bg-slate-800/40' : 'bg-gray-50 dark:bg-slate-800/40'}`}>
-                {/* Background Pattern */}
+              <div className={`h-40 relative flex items-center justify-center overflow-hidden ${premium ? 'bg-slate-50 dark:bg-slate-800/40' : 'bg-gray-50 dark:bg-slate-800/40'
+                }`}>
                 <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'radial-gradient(#003B73 1px, transparent 1px)', backgroundSize: '10px 10px' }}></div>
 
                 {item.type === 'background' ? (
                   <div className={`w-3/4 h-24 rounded-lg shadow-lg transform group-hover:scale-105 transition-transform duration-500 ${item.previewValue}`}></div>
                 ) : item.type === 'badge' ? (
                   <div className={`px-4 py-2 rounded-full text-sm font-bold ${item.previewValue}`}>{t(`item.${item.id}.name`) || item.name}</div>
+                ) : item.type === 'collaboration' ? (
+                  <div className={`w-3/4 h-24 rounded-2xl shadow-lg border-2 border-dashed border-white/40 flex flex-col items-center justify-center p-4 transform group-hover:scale-105 transition-transform duration-500 ${item.previewValue}`}>
+                    <Zap size={24} className="mb-1" />
+                    <span className="text-xs font-black uppercase tracking-widest">Coupón</span>
+                  </div>
                 ) : (
                   <div className="relative transform group-hover:scale-110 transition-transform duration-500">
                     <img
@@ -208,7 +234,6 @@ const ShopPanel: React.FC<ShopPanelProps> = ({ user, onPurchase, onEquip, onBuyP
                   </div>
                 )}
 
-                {/* Price Tag if not owned */}
                 {!isPurchased && (
                   <div className="absolute bottom-2 right-2 bg-white/90 dark:bg-slate-900/80 backdrop-blur text-primary dark:text-slate-100 px-2.5 py-1 rounded-lg text-xs font-bold shadow-sm border border-gray-100 dark:border-slate-700 flex items-center gap-1">
                     {item.cost === 0 ? t('shop.free') : item.cost}
@@ -272,14 +297,15 @@ const ShopPanel: React.FC<ShopPanelProps> = ({ user, onPurchase, onEquip, onBuyP
           );
         })}
       </div>
+
       {/* Premium Modal */}
       {(showPremiumModal || modalAnimateIn) && (
-        <div className={`fixed inset-0 z-50 flex items-center justify-center ${modalAnimateIn ? 'bg-black/50' : 'bg-black/0'}`}>
+        <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${modalAnimateIn ? 'bg-black/50' : 'bg-black/0'}`}>
           <div className={`w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl transform transition-all duration-300 ${modalAnimateIn ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
             <div className="p-6 bg-gradient-to-r from-indigo-900 to-primary text-white">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex flex-col gap-6">
                 <div>
-                  <div className="flex items-center gap-3 mb-3">
+                  <div className="flex items-center gap-3 mb-4">
                     <div className="w-12 h-12 rounded-lg bg-yellow-400 flex items-center justify-center text-indigo-900 shadow-lg">
                       <Crown size={20} />
                     </div>
@@ -288,121 +314,177 @@ const ShopPanel: React.FC<ShopPanelProps> = ({ user, onPurchase, onEquip, onBuyP
                       <p className="text-sm text-yellow-200">{t('shop.premium_sub')}</p>
                     </div>
                   </div>
-                  <p className="text-sm text-white/80 mb-4">{t('shop.premium_enjoy')}</p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                     <div className="flex items-start gap-3">
                       <div className="mt-1 text-yellow-300"><Star size={18} /></div>
                       <div>
                         <div className="font-semibold">{t('shop.premium_exclusive')}</div>
-                        <div className="text-xs text-white/80">{t('shop.premium_desc_exclusive')}</div>
+                        <div className="text-xs text-white/70">{t('shop.premium_desc_exclusive')}</div>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
                       <div className="mt-1 text-yellow-300"><Trophy size={18} /></div>
                       <div>
                         <div className="font-semibold">{t('shop.premium_tags')}</div>
-                        <div className="text-xs text-white/80">{t('shop.premium_desc_tags')}</div>
+                        <div className="text-xs text-white/70">{t('shop.premium_desc_tags')}</div>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
                       <div className="mt-1 text-yellow-300"><Gift size={18} /></div>
                       <div>
                         <div className="font-semibold">{t('shop.premium_bonuses')}</div>
-                        <div className="text-xs text-white/80">{t('shop.premium_desc_bonuses')}</div>
+                        <div className="text-xs text-white/70">{t('shop.premium_desc_bonuses')}</div>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
                       <div className="mt-1 text-yellow-300"><Check size={18} /></div>
                       <div>
-                        <div className="font-semibold">{t('shop.premium_vip')}</div>
-                        <div className="text-xs text-white/80">{t('shop.premium_desc_vip')}</div>
+                        <div className="font-semibold text-white">{t('shop.premium_vip')}</div>
+                        <div className="text-xs text-white/70">{t('shop.premium_desc_vip')}</div>
                       </div>
                     </div>
                   </div>
                 </div>
-                <div className="w-48 flex-shrink-0 flex flex-col justify-center items-center self-center">
-                  {user?.premium ? (
-                    <div className="bg-gradient-to-r from-emerald-50 to-emerald-100 border border-emerald-200 rounded-2xl p-5 text-center mx-auto shadow-lg">
-                      <div className="flex items-center justify-center mb-3">
-                        <div className="w-12 h-12 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-inner mr-3">
-                          <Check size={18} />
+
+                {user?.premium ? (
+                  <div className="bg-white/10 border border-white/20 rounded-2xl p-6 text-center">
+                    <div className="flex items-center justify-center gap-3 mb-2">
+                      <Check className="text-green-400" />
+                      <span className="font-bold">{t('shop.premium_thanks')}</span>
+                    </div>
+                    <p className="text-sm text-white/70">{t('shop.premium_updated')}</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Opción 1: Puntos */}
+                      <div className={`p-5 rounded-2xl border-2 transition-all ${(user.points || 0) >= PREMIUM_COST_POINTS
+                        ? 'bg-white/10 border-yellow-400/30'
+                        : 'bg-white/5 border-white/10 opacity-70'
+                        }`}>
+                        <div className="flex flex-col items-center text-center space-y-3">
+                          <div className="bg-yellow-400/20 p-3 rounded-full">
+                            <Coins className="text-yellow-400" size={24} />
+                          </div>
+                          <h4 className="font-bold text-lg">{t('shop.points_card')}</h4>
+                          <div>
+                            <p className="text-2xl font-black text-yellow-300">{PREMIUM_COST_POINTS} pts</p>
+                            <p className="text-xs text-white/60">{(user.points || 0)} pts disponibles</p>
+                          </div>
+                          <button
+                            onClick={() => {
+                              if ((user.points || 0) >= PREMIUM_COST_POINTS) {
+                                onBuyPremium && onBuyPremium();
+                                setModalAnimateIn(false);
+                                setTimeout(() => setShowPremiumModal(false), 280);
+                              }
+                            }}
+                            disabled={(user.points || 0) < PREMIUM_COST_POINTS}
+                            className={`w-full py-3 rounded-xl font-bold transition-all ${(user.points || 0) >= PREMIUM_COST_POINTS
+                              ? 'bg-yellow-400 text-indigo-900 hover:scale-105 active:scale-95 shadow-lg shadow-yellow-400/20'
+                              : 'bg-white/10 text-white/40 cursor-not-allowed border border-white/5'
+                              }`}
+                          >
+                            {(user.points || 0) >= PREMIUM_COST_POINTS ? t('shop.buy') : t('shop.no_points')}
+                          </button>
                         </div>
-                        <div className="text-left">
-                          <div className="text-sm font-semibold text-emerald-800">{t('shop.premium_thanks')}</div>
-                          <div className="text-xs text-emerald-700">{t('shop.premium_updated')}</div>
+                      </div>
+
+                      {/* Opción 2: Tarjeta */}
+                      <div className="p-5 rounded-2xl border-2 bg-indigo-500/20 border-white/20 hover:border-white/40 transition-all">
+                        <div className="flex flex-col items-center text-center space-y-3">
+                          <div className="bg-white/20 p-3 rounded-full text-white">
+                            <CreditCard size={24} />
+                          </div>
+                          <h4 className="font-bold text-lg">{t('shop.pay_card')}</h4>
+                          <div>
+                            <p className="text-2xl font-black text-white">4.99€</p>
+                            <p className="text-xs text-white/60">Pago mensual recurrente</p>
+                          </div>
+                          {onStartPremiumCheckout && (
+                            <button
+                              onClick={() => {
+                                onStartPremiumCheckout();
+                                setModalAnimateIn(false);
+                                setTimeout(() => setShowPremiumModal(false), 280);
+                              }}
+                              className="w-full py-3 rounded-xl font-bold bg-white text-indigo-900 hover:scale-105 active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2"
+                            >
+                              {t('shop.pay_card')}
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
-                  ) : (
-                    <div className="bg-white/10 rounded-xl p-4 text-center mx-auto">
-                      <div className="text-sm text-white/80">{t('shop.price')}</div>
-                      <div className="text-3xl font-extrabold text-yellow-300 my-2">{PREMIUM_COST_POINTS} pts</div>
-                      <button
-                        onClick={() => {
-                          if ((user.points || 0) >= PREMIUM_COST_POINTS) {
-                            onBuyPremium && onBuyPremium();
-                            setModalAnimateIn(false);
-                            setTimeout(() => setShowPremiumModal(false), 280);
-                          }
-                        }}
-                        disabled={(user.points || 0) < PREMIUM_COST_POINTS}
-                        className={`w-full py-2 rounded-lg font-bold mb-2 ${(user.points || 0) >= PREMIUM_COST_POINTS ? 'bg-yellow-400 text-indigo-900' : 'bg-white/20 text-white/40 cursor-not-allowed'}`}
-                      >{`${t('shop.buy')} (${PREMIUM_COST_POINTS} pts)`}</button>
-                    </div>
-                  )}
-                </div>
+                    <p className="text-[10px] text-center text-white/40 px-4">
+                      Pagar con tarjeta desbloquea instantáneamente todas las funciones premium. Las suscripciones mensuales pueden cancelarse en cualquier momento desde tu panel de usuario.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
             <div className="p-4 bg-white dark:bg-slate-900 text-right border-t border-gray-100 dark:border-slate-800">
-              <button onClick={() => { setModalAnimateIn(false); setTimeout(() => setShowPremiumModal(false), 280); }} className="text-sm text-indigo-900 dark:text-slate-100 font-semibold">{t('shop.close')}</button>
+              <button
+                onClick={() => { setModalAnimateIn(false); setTimeout(() => setShowPremiumModal(false), 280); }}
+                className="text-sm text-indigo-900 dark:text-slate-100 font-semibold px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition"
+              >
+                {t('shop.close')}
+              </button>
             </div>
           </div>
         </div>
       )}
+
       {/* Points & XP Help Modal */}
       {(showPointsModal || pointsModalAnimateIn) && (
-        <div className={`fixed inset-0 z-50 flex items-center justify-center ${pointsModalAnimateIn ? 'bg-black/50' : 'bg-black/0'}`}>
+        <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${pointsModalAnimateIn ? 'bg-black/50' : 'bg-black/0'}`}>
           <div className={`w-full max-w-4xl rounded-3xl overflow-hidden shadow-2xl transform transition-all duration-300 ${pointsModalAnimateIn ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
-            <div className="p-6 bg-gradient-to-r from-indigo-900 to-primary text-white">
-              <div className="mb-6 text-center">
-                <h3 className="text-2xl font-extrabold">{t('shop.points_title')}</h3>
-                <p className="text-white/80 max-w-2xl mx-auto mt-2">{t('shop.points_sub')}</p>
+            <div className="p-8 bg-gradient-to-r from-indigo-900 to-primary text-white">
+              <div className="mb-8 text-center">
+                <h3 className="text-3xl font-extrabold mb-3">{t('shop.points_title')}</h3>
+                <p className="text-white/80 max-w-2xl mx-auto">{t('shop.points_sub')}</p>
               </div>
 
               <div className="grid md:grid-cols-3 gap-6">
-                <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-xl border border-gray-100 dark:border-slate-800 text-left">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center text-primary">
-                      <ShoppingBag size={18} />
-                    </div>
-                    <h4 className="font-bold text-slate-800 dark:text-slate-100">{t('shop.points_card')}</h4>
+                <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-xl border border-gray-100 dark:border-slate-800 space-y-4">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-100 text-primary flex items-center justify-center shadow-inner">
+                    <ShoppingBag size={24} />
                   </div>
-                  <p className="text-sm text-slate-600 dark:text-slate-300">{t('shop.points_desc')}</p>
+                  <div>
+                    <h4 className="font-bold text-slate-800 dark:text-slate-100 text-xl mb-1">{t('shop.points_card')}</h4>
+                    <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{t('shop.points_desc')}</p>
+                  </div>
                 </div>
 
-                <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-xl border border-gray-100 dark:border-slate-800 text-left">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-teal-100 to-teal-50 flex items-center justify-center text-secondary">
-                      <Trophy size={18} />
-                    </div>
-                    <h4 className="font-bold text-slate-800 dark:text-slate-100">{t('shop.xp_card')}</h4>
+                <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-xl border border-gray-100 dark:border-slate-800 space-y-4">
+                  <div className="w-12 h-12 rounded-2xl bg-teal-100 text-secondary flex items-center justify-center shadow-inner">
+                    <Trophy size={24} />
                   </div>
-                  <p className="text-sm text-slate-600 dark:text-slate-300">{t('shop.xp_desc')}</p>
+                  <div>
+                    <h4 className="font-bold text-slate-800 dark:text-slate-100 text-xl mb-1">{t('shop.xp_card')}</h4>
+                    <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{t('shop.xp_desc')}</p>
+                  </div>
                 </div>
 
-                <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-xl border border-gray-100 dark:border-slate-800 text-left">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-yellow-100 to-yellow-50 flex items-center justify-center text-yellow-600">
-                      <Gift size={18} />
-                    </div>
-                    <h4 className="font-bold text-slate-800 dark:text-slate-100">{t('shop.store_card')}</h4>
+                <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-xl border border-gray-100 dark:border-slate-800 space-y-4">
+                  <div className="w-12 h-12 rounded-2xl bg-yellow-100 text-yellow-600 flex items-center justify-center shadow-inner">
+                    <Gift size={24} />
                   </div>
-                  <p className="text-sm text-slate-600 dark:text-slate-300">{t('shop.store_desc')}</p>
+                  <div>
+                    <h4 className="font-bold text-slate-800 dark:text-slate-100 text-xl mb-1">{t('shop.store_card')}</h4>
+                    <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{t('shop.store_desc')}</p>
+                  </div>
                 </div>
               </div>
             </div>
             <div className="p-4 bg-white dark:bg-slate-900 text-right border-t border-gray-100 dark:border-slate-800">
-              <button onClick={() => { setPointsModalAnimateIn(false); setTimeout(() => setShowPointsModal(false), 280); }} className="text-sm text-indigo-900 dark:text-slate-100 font-semibold">{t('shop.close')}</button>
+              <button
+                onClick={() => { setPointsModalAnimateIn(false); setTimeout(() => setShowPointsModal(false), 280); }}
+                className="text-sm text-indigo-900 dark:text-slate-100 font-semibold px-6 py-2.5 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition"
+              >
+                {t('shop.close')}
+              </button>
             </div>
           </div>
         </div>

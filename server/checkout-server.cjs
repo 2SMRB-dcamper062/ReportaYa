@@ -43,13 +43,14 @@ app.post('/create-checkout-session', async (req, res) => {
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
-      mode: 'payment',
+      mode: 'subscription',
       line_items: [
         {
           price_data: {
             currency: 'eur',
             product_data: { name: 'ReportaYa Premium' },
             unit_amount: amount,
+            recurring: { interval: 'month' },
           },
           quantity: 1,
         },
@@ -59,7 +60,7 @@ app.post('/create-checkout-session', async (req, res) => {
       customer_email: req.body?.email || undefined,
     });
 
-    res.json({ id: session.id });
+    res.json({ id: session.id, url: session.url });
   } catch (err) {
     console.error('Stripe create session error:', err);
     res.status(500).json({ error: err.message });

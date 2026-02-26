@@ -869,14 +869,10 @@ const App = () => {
         body: JSON.stringify({ email }),
       });
       const data = await res.json();
-      if (!data.id) throw new Error('No session id returned');
+      if (!data.url) throw new Error('No checkout URL returned from server');
 
-      // Redirect to Stripe Checkout using the session ID
-      const { loadStripe } = await import('@stripe/stripe-js');
-      const stripe = await loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || (window as any).STRIPE_PUBLISHABLE_KEY || '');
-      if (!stripe) throw new Error('Stripe failed to load');
-      // Use the modern Stripe API
-      await (stripe as any).redirectToCheckout({ sessionId: data.id });
+      // Modern redirect to Stripe Checkout
+      window.location.href = data.url;
     } catch (err: any) {
       console.error('Error iniciando checkout:', err);
       alert(t('alert.checkout_error') + (err.message || err));
@@ -1152,6 +1148,7 @@ const App = () => {
             onPurchase={handleShopPurchase}
             onEquip={handleEquipItem}
             onBuyPremium={handleBuyPremium}
+            onStartPremiumCheckout={() => handleStartPremiumCheckout(user.email)}
           />
         )}
 
