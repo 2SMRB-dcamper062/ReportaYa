@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { FC } from 'react';
 import { UserRole, Issue, IssueStatus, IssueCategory, User, ShopItem } from './types';
-import { MOCK_ISSUES, MOCK_USER, SEVILLA_CENTER, PREMIUM_COST_POINTS, SHOP_ITEMS, ALL_SHOP_ITEMS, EXCLUSIVE_BADGES } from './constants';
+import { MOCK_ISSUES, MOCK_USER, SEVILLA_CENTER, PREMIUM_COST_POINTS, SHOP_ITEMS, ALL_SHOP_ITEMS, EXCLUSIVE_BADGES, SEVILLA_BOUNDS } from './constants';
+
 import IssueMap from './components/IssueMapView';
 import StatsPanel from './components/StatsPanel';
 import LandingPage from './components/LandingPage';
@@ -110,6 +111,19 @@ const compressImage = async (file: File): Promise<string> => {
 
 type ThemeMode = 'light' | 'dark';
 const THEME_STORAGE_KEY = 'themeMode';
+const ACTIVE_TAB_STORAGE_KEY = 'activeTab';
+
+function getInitialActiveTab(): any {
+  try {
+    const stored = localStorage.getItem(ACTIVE_TAB_STORAGE_KEY);
+    // Don't persist certain tabs that require specific context/tokens
+    if (stored && stored !== 'reset-password') return stored;
+    return 'home';
+  } catch {
+    return 'home';
+  }
+}
+
 
 function getInitialThemeMode(): ThemeMode {
   try {
@@ -305,6 +319,12 @@ const ReportForm = ({ onSubmit, onCancel, user }: { onSubmit: (data: Partial<Iss
   const [street, setStreet] = useState('');
   const [suggestions, setSuggestions] = useState<{ label: string; lat: number; lon: number }[]>([]);
 
+  const isWithinSevilla = (lat: number, lng: number) => {
+    return lat >= SEVILLA_BOUNDS.minLat && lat <= SEVILLA_BOUNDS.maxLat &&
+      lng >= SEVILLA_BOUNDS.minLng && lng <= SEVILLA_BOUNDS.maxLng;
+  };
+
+
   const handleAIAnalysis = async () => {
     if (!desc) return;
     setIsAnalyzing(true);
@@ -324,12 +344,18 @@ const ReportForm = ({ onSubmit, onCancel, user }: { onSubmit: (data: Partial<Iss
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          });
+          const { latitude, longitude } = position.coords;
+          if (isWithinSevilla(latitude, longitude)) {
+            setLocation({
+              lat: latitude,
+              lng: longitude
+            });
+          } else {
+            alert(t('report.location_out_of_bounds') || 'Ubicación fuera de Sevilla no permitida.');
+          }
           setLocating(false);
         },
+
         (error) => {
           console.error('Geolocation error:', error);
           alert(t('report.geoloc_error') || 'No se pudo obtener la ubicación. Asegúrate de permitir el acceso a la ubicación.');
@@ -354,7 +380,13 @@ const ReportForm = ({ onSubmit, onCancel, user }: { onSubmit: (data: Partial<Iss
       return;
     }
 
+    if (!isWithinSevilla(location.lat, location.lng)) {
+      alert(t('report.location_out_of_bounds') || 'Solo se permiten reportes dentro de Sevilla.');
+      return;
+    }
+
     // Strict Postal Code Validation for Reporting (Sevilla 41xxx)
+
     if (user?.postalCode && !user.postalCode.startsWith('41')) {
       alert(t('auth.postal_code_error') || 'Solo residentes de Sevilla pueden crear reportes.');
       return;
@@ -376,15 +408,20 @@ const ReportForm = ({ onSubmit, onCancel, user }: { onSubmit: (data: Partial<Iss
     }
 
     try {
+      const viewbox = `${SEVILLA_BOUNDS.minLng},${SEVILLA_BOUNDS.maxLat},${SEVILLA_BOUNDS.maxLng},${SEVILLA_BOUNDS.minLat}`;
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}+Sevilla&format=json&addressdetails=1&limit=5&countrycodes=es`
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&viewbox=${viewbox}&bounded=1&format=json&addressdetails=1&limit=5&countrycodes=es`
       );
+
       const data = await response.json();
-      const addresses = data.map((item: any) => ({
-        label: item.display_name,
-        lat: parseFloat(item.lat),
-        lon: parseFloat(item.lon),
-      }));
+      // Filter results to ensure they belong to Sevilla province (avoiding neighbors like Huelva)
+      const addresses = data
+        .filter((item: any) => item.display_name.toLowerCase().includes('sevilla'))
+        .map((item: any) => ({
+          label: item.display_name,
+          lat: parseFloat(item.lat),
+          lon: parseFloat(item.lon),
+        }));
       setSuggestions(addresses);
     } catch (error) {
       console.error('Error fetching address suggestions:', error);
@@ -713,7 +750,8 @@ const App = () => {
   const [user, setUser] = useState<User | null>(getStoredUser());
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => getInitialThemeMode());
   const { t } = useLocale();
-  const [activeTab, setActiveTab] = useState<'home' | 'map' | 'create' | 'admin' | 'profile' | 'shop' | 'reset-password'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'map' | 'create' | 'admin' | 'profile' | 'shop' | 'reset-password'>(() => getInitialActiveTab());
+
   const [resetToken, setResetToken] = useState<string | null>(null);
   const [issues, setIssues] = useState<Issue[]>([]);
 
@@ -726,6 +764,18 @@ const App = () => {
       // ignore
     }
   }, [themeMode]);
+
+  // Sync activeTab to localStorage
+  useEffect(() => {
+    try {
+      if (activeTab !== 'reset-password') {
+        localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, activeTab);
+      }
+    } catch {
+      // ignore
+    }
+  }, [activeTab]);
+
 
   // Load reports and refresh user session from MongoDB on mount
   useEffect(() => {

@@ -1,7 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import { Issue, IssueCategory, IssueStatus, UserRole } from '../types';
-import { SEVILLA_CENTER } from '../constants';
+import { SEVILLA_CENTER, SEVILLA_LEAFLET_BOUNDS } from '../constants';
+
 import { useLocale } from '../i18n';
 
 const CATEGORY_KEYS: Record<string, string> = {
@@ -34,8 +35,13 @@ const IssueMap: React.FC<IssueMapProps> = ({ issues, onSelectIssue, focusedIssue
   useEffect(() => {
     // Initialize map if not already done
     if (mapContainerRef.current && !mapRef.current) {
-      const map = L.map(mapContainerRef.current).setView([SEVILLA_CENTER.lat, SEVILLA_CENTER.lng], 13);
+      const map = L.map(mapContainerRef.current, {
+        maxBounds: SEVILLA_LEAFLET_BOUNDS,
+        maxBoundsViscosity: 1.0,
+        minZoom: 8
+      }).setView([SEVILLA_CENTER.lat, SEVILLA_CENTER.lng], 13);
       mapRef.current = map;
+
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

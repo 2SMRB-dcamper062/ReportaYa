@@ -4,6 +4,20 @@ import { Issue, IssueCategory, IssueStatus, UserRole, ShopItem } from './types';
 // Sevilla Center
 export const SEVILLA_CENTER = { lat: 37.3891, lng: -5.9845 };
 
+// Sevilla Bounding Box (Province-wide coverage, refined to exclude Huelva edge)
+export const SEVILLA_BOUNDS = {
+  minLat: 36.80,
+  maxLat: 38.20,
+  minLng: -6.30,
+  maxLng: -4.70
+};
+
+// For Leaflet maxBounds format: [[southLat, westLng], [northLat, eastLng]]
+export const SEVILLA_LEAFLET_BOUNDS: [[number, number], [number, number]] = [
+  [SEVILLA_BOUNDS.minLat, SEVILLA_BOUNDS.minLng],
+  [SEVILLA_BOUNDS.maxLat, SEVILLA_BOUNDS.maxLng]
+];
+
 export const SHOP_ITEMS: ShopItem[] = [
   // --- MARCOS (FRAMES) ---
   {
