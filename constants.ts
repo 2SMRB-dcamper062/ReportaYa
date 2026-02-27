@@ -29,98 +29,26 @@ export const SHOP_ITEMS: ShopItem[] = [
     previewValue: 'border-white'
   },
   {
-    id: 'frame_betis',
-    name: 'Verdiblanco',
-    description: 'Para los fieles de Heliópolis.',
-    cost: 300,
-    type: 'frame',
-    previewValue: 'border-green-600 ring-4 ring-white border-double'
-  },
-  {
     id: 'frame_seville',
-    name: 'Rojo Sevilla',
+    name: 'Sevilla FC',
     description: 'Para los fieles de Nervión.',
-    cost: 300,
+    cost: 50,
     type: 'frame',
     previewValue: 'border-red-700 ring-4 ring-white border-double'
   },
   {
-    id: 'frame_gold',
-    name: 'Marco Oro',
-    description: 'Un toque de elegancia para ciudadanos ejemplares.',
-    cost: 750,
+    id: 'frame_betis',
+    name: 'Real Betis Balompié',
+    description: 'Para los fieles de Heliópolis.',
+    cost: 50,
     type: 'frame',
-    previewValue: 'border-yellow-400 ring-4 ring-yellow-200'
-  },
-  {
-    id: 'frame_feria',
-    name: 'Feria de Abril',
-    description: 'Estilo farolillos y lunares.',
-    cost: 1050,
-    type: 'frame',
-    previewValue: 'border-red-500 ring-4 ring-green-500 border-dashed'
-  },
-  {
-    id: 'frame_nazareno',
-    name: 'Semana Santa',
-    description: 'Solemne morado nazareno.',
-    cost: 1350,
-    type: 'frame',
-    previewValue: 'border-purple-800 ring-4 ring-purple-300'
-  },
-  {
-    id: 'frame_triana',
-    name: 'Cerámica Triana',
-    description: 'Inspirado en los azulejos del puente.',
-    cost: 1800,
-    type: 'frame',
-    previewValue: 'border-blue-600 ring-4 ring-yellow-400 border-dotted'
-  },
-  {
-    id: 'frame_diamond',
-    name: 'Diamante VIP',
-    description: 'Solo para los ciudadanos más activos.',
-    cost: 3000,
-    type: 'frame',
-    previewValue: 'border-cyan-300 ring-4 ring-cyan-100 shadow-[0_0_15px_rgba(34,211,238,0.8)]'
-  },
-  {
-    id: 'frame_isabel',
-    name: 'Puente de Triana',
-    description: 'Inspirado en los arcos del puente de hierro.',
-    cost: 1500,
-    type: 'frame',
-    previewValue: 'border-slate-700 ring-2 ring-slate-400 border-double rounded-none'
-  },
-  {
-    id: 'frame_alfalfa',
-    name: 'Azulejo Alfalfa',
-    description: 'Patrón cerámico del centro histórico.',
-    cost: 1200,
-    type: 'frame',
-    previewValue: 'border-blue-500 ring-4 ring-emerald-100 border-dotted'
-  },
-  {
-    id: 'frame_maestranza',
-    name: 'Albero Maestranza',
-    description: 'Colores de la plaza de toros.',
-    cost: 900,
-    type: 'frame',
-    previewValue: 'border-yellow-600 ring-4 ring-white border-solid'
-  },
-  {
-    id: 'frame_metropol',
-    name: 'Setas de Sevilla',
-    description: 'Diseño orgánico de madera.',
-    cost: 2000,
-    type: 'frame',
-    previewValue: 'border-amber-100 ring-2 ring-amber-300 border-dashed rounded-xl'
+    previewValue: 'border-green-600 ring-4 ring-white border-double'
   },
   {
     id: 'frame_solid_neon',
     name: 'Azul Neón',
     description: 'Borde sólido brillante.',
-    cost: 500,
+    cost: 100,
     type: 'frame',
     previewValue: 'border-[6px] border-cyan-400 shadow-[0_0_10px_#22d3ee]'
   },
@@ -128,15 +56,55 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'frame_solid_ruby',
     name: 'Rojo Rubí',
     description: 'Elegancia en color sólido.',
-    cost: 500,
+    cost: 100,
     type: 'frame',
     previewValue: 'border-[6px] border-red-600 shadow-[0_0_10px_#dc2626]'
+  },
+  {
+    id: 'frame_gold',
+    name: 'Marco Oro',
+    description: 'Un toque de elegancia para ciudadanos ejemplares.',
+    cost: 150,
+    type: 'frame',
+    previewValue: 'border-yellow-400 ring-4 ring-yellow-200'
+  },
+  {
+    id: 'frame_feria',
+    name: 'Feria de Abril',
+    description: 'Estilo farolillos y lunares.',
+    cost: 200,
+    type: 'frame',
+    previewValue: 'border-red-500 ring-4 ring-green-500 border-dashed'
+  },
+  {
+    id: 'frame_maestranza',
+    name: 'Albero Maestranza',
+    description: 'Colores de la plaza de toros.',
+    cost: 200,
+    type: 'frame',
+    previewValue: 'border-yellow-600 ring-4 ring-white border-solid'
+  },
+  {
+    id: 'frame_nazareno',
+    name: 'Semana Santa',
+    description: 'Solemne morado nazareno.',
+    cost: 250,
+    type: 'frame',
+    previewValue: 'border-purple-800 ring-4 ring-purple-300'
+  },
+  {
+    id: 'frame_alfalfa',
+    name: 'Azulejo Alfalfa',
+    description: 'Patrón cerámico del centro histórico.',
+    cost: 250,
+    type: 'frame',
+    previewValue: 'border-blue-500 ring-4 ring-emerald-100 border-dotted'
   },
   {
     id: 'frame_grad_sunset',
     name: 'Atardecer',
     description: 'Gradiente cálido de Sevilla.',
-    cost: 1200,
+    cost: 250,
     type: 'frame',
     previewValue: 'border-[6px] border-transparent bg-gradient-to-r from-orange-400 to-red-500 bg-clip-border'
   },
@@ -144,15 +112,47 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'frame_grad_ocean',
     name: 'Océano',
     description: 'Gradiente refrescante.',
-    cost: 1200,
+    cost: 250,
     type: 'frame',
     previewValue: 'border-[6px] border-transparent bg-gradient-to-r from-blue-400 to-emerald-500 bg-clip-border'
+  },
+  {
+    id: 'frame_triana',
+    name: 'Cerámica Triana',
+    description: 'Inspirado en los azulejos del puente.',
+    cost: 300,
+    type: 'frame',
+    previewValue: 'border-blue-600 ring-4 ring-yellow-400 border-dotted'
+  },
+  {
+    id: 'frame_isabel',
+    name: 'Puente de Triana',
+    description: 'Inspirado en los arcos del puente de hierro.',
+    cost: 300,
+    type: 'frame',
+    previewValue: 'border-slate-700 ring-2 ring-slate-400 border-double rounded-none'
+  },
+  {
+    id: 'frame_metropol',
+    name: 'Setas de Sevilla',
+    description: 'Diseño orgánico de madera.',
+    cost: 400,
+    type: 'frame',
+    previewValue: 'border-amber-100 ring-2 ring-amber-300 border-dashed rounded-xl'
+  },
+  {
+    id: 'frame_diamond',
+    name: 'Diamante VIP',
+    description: 'Solo para los ciudadanos más activos.',
+    cost: 500,
+    type: 'frame',
+    previewValue: 'border-cyan-300 ring-4 ring-cyan-100 shadow-[0_0_15px_rgba(34,211,238,0.8)]'
   },
   {
     id: 'frame_mix_royal',
     name: 'Realeza',
     description: 'Mezcla de oro y púrpura.',
-    cost: 2500,
+    cost: 400,
     type: 'frame',
     premium: true,
     previewValue: 'border-[6px] border-purple-700 ring-4 ring-yellow-400 shadow-xl'
@@ -161,7 +161,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'frame_mix_cyber',
     name: 'Cyber Sevilla',
     description: 'Estilo futurista mezclado.',
-    cost: 3000,
+    cost: 500,
     type: 'frame',
     premium: true,
     previewValue: 'border-[6px] border-fuchsia-500 ring-2 ring-cyan-400 border-double'
@@ -177,18 +177,50 @@ export const SHOP_ITEMS: ShopItem[] = [
     previewValue: 'bg-gradient-to-r from-green-500 to-green-700'
   },
   {
+    id: 'bg_cielo',
+    name: 'Cielo Sevillano',
+    description: 'Vistas de la ciudad y del cielo.',
+    cost: 60,
+    type: 'background',
+    previewValue: "bg-[url('/cielo.jpg')] bg-cover bg-center"
+  },
+  {
     id: 'bg_alameda',
     name: 'Atardecer Plaza España',
     description: 'Atardecer Plaza España.',
-    cost: 450,
+    cost: 80,
     type: 'background',
     previewValue: "bg-[url('/atardecer-plaza-espana.jpg')] bg-cover bg-center"
+  },
+  {
+    id: 'bg_mosaico',
+    name: 'Feria de Sevilla',
+    description: 'Feria de Sevilla.',
+    cost: 80,
+    type: 'background',
+    previewValue: "bg-[url('/feria_sevilla.jpg')] bg-cover bg-center"
+  },
+  {
+    id: 'bg_plaza_alba',
+    name: 'Plaza al Alba',
+    description: 'Tonos cálidos al amanecer.',
+    cost: 90,
+    type: 'background',
+    previewValue: "bg-[url('/plaza_alba.jpg')] bg-cover bg-center brightness-95"
+  },
+  {
+    id: 'bg_fondo_inicio',
+    name: 'Fondo Inicio',
+    description: 'Imagen de cabecera del sitio.',
+    cost: 100,
+    type: 'background',
+    previewValue: "bg-[url('/fondo_inicio.jpg')] bg-cover bg-center"
   },
   {
     id: 'bg_guadalquivir',
     name: 'Río Guadalquivir',
     description: 'Frescura azul verdosa.',
-    cost: 750,
+    cost: 120,
     type: 'background',
     previewValue: "bg-[url('/rio_guadalquivir.jpg')] bg-cover bg-center"
   },
@@ -196,57 +228,24 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'bg_azahar',
     name: 'Catedral de Sevilla',
     description: 'Catedral de Sevilla.',
-    cost: 900,
+    cost: 150,
     type: 'background',
     previewValue: "bg-[url('/catedral.jpg')] bg-cover bg-center"
-  },
-  {
-    id: 'bg_fondo_inicio',
-    name: 'Fondo Inicio',
-    description: 'Imagen de cabecera del sitio.',
-    cost: 600,
-    type: 'background',
-    previewValue: "bg-[url('/fondo_inicio.jpg')] bg-cover bg-center"
-  },
-  {
-    id: 'bg_mosaico',
-    name: 'Feria de Sevilla',
-    description: 'Feria de Sevilla.',
-    cost: 450,
-    type: 'background',
-    previewValue: "bg-[url('/feria_sevilla.jpg')] bg-cover bg-center"
-  },
-  {
-    id: 'bg_cielo',
-    name: 'Cielo Sevillano',
-    description: 'Vistas de la ciudad y del cielo.',
-    cost: 360,
-    type: 'background',
-    previewValue: "bg-[url('/cielo.jpg')] bg-cover bg-center"
-  },
-  {
-    id: 'bg_plaza_alba',
-    name: 'Plaza al Alba',
-    description: 'Tonos cálidos al amanecer.',
-    cost: 540,
-    type: 'background',
-    previewValue: "bg-[url('/plaza_alba.jpg')] bg-cover bg-center brightness-95"
   },
   {
     id: 'bg_azulejos',
     name: 'Azulejos Triana',
     description: 'Patrón inspirado en azulejos.',
-    cost: 660,
+    cost: 120,
     type: 'background',
     premium: true,
     previewValue: "bg-[url('/azulejo_triana.jpg')] bg-cover bg-center brightness-95"
   },
-
   {
     id: 'bg_giralda',
     name: 'Atardecer Giralda',
     description: 'Los colores del cielo sobre la torre.',
-    cost: 1500,
+    cost: 250,
     type: 'background',
     premium: true,
     previewValue: "bg-[url('/atardecer_giralda.jpg')] bg-cover bg-center"
@@ -255,7 +254,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'bg_alcazar',
     name: 'Oro del Alcázar',
     description: 'Lujo histórico y patrones dorados.',
-    cost: 2100,
+    cost: 350,
     type: 'background',
     premium: true,
     previewValue: "bg-[url('/alcazar_patio.jpg')] bg-cover bg-center"
@@ -264,7 +263,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'bg_noche',
     name: 'Noche Sevillana',
     description: 'Elegancia nocturna bajo las estrellas.',
-    cost: 2700,
+    cost: 450,
     type: 'background',
     premium: true,
     previewValue: "bg-[url('/noche_sevillana.jpg')] bg-cover bg-center"
@@ -283,6 +282,22 @@ export const BADGE_ITEMS: ShopItem[] = [
     previewValue: 'bg-yellow-100 text-yellow-800'
   },
   {
+    id: 'tag_conserje',
+    name: 'Conserje',
+    description: 'Cuida tu entorno y reporta anomalías.',
+    cost: 100,
+    type: 'badge',
+    previewValue: 'bg-gray-100 text-gray-800'
+  },
+  {
+    id: 'tag_voluntario',
+    name: 'Voluntario',
+    description: 'Participa en iniciativas de barrio.',
+    cost: 150,
+    type: 'badge',
+    previewValue: 'bg-green-100 text-green-800'
+  },
+  {
     id: 'tag_guardian',
     name: 'Guardián de Sevilla',
     description: 'Protege y vigila tu entorno urbano.',
@@ -297,22 +312,6 @@ export const BADGE_ITEMS: ShopItem[] = [
     cost: 600,
     type: 'badge',
     previewValue: 'bg-purple-100 text-purple-800'
-  },
-  {
-    id: 'tag_voluntario',
-    name: 'Voluntario',
-    description: 'Participa en iniciativas de barrio.',
-    cost: 150,
-    type: 'badge',
-    previewValue: 'bg-green-100 text-green-800'
-  },
-  {
-    id: 'tag_conserje',
-    name: 'Conserje',
-    description: 'Cuida tu entorno y reporta anomalías.',
-    cost: 100,
-    type: 'badge',
-    previewValue: 'bg-gray-100 text-gray-800'
   },
 
   // Etiquetas premium (solo para usuarios Premium)
@@ -368,12 +367,12 @@ export const EXCLUSIVE_BADGES: ShopItem[] = [
 // --- COLABORACIONES CON EMPRESAS DE SEVILLA ---
 export const COLLAB_ITEMS: ShopItem[] = [
   {
-    id: 'collab_tussam',
-    name: 'Bonobús Tussam',
-    description: 'Recarga de 7€ para tu tarjeta de transporte Tussam.',
-    cost: 5000,
+    id: 'collab_sevici',
+    name: 'Mes Sevici',
+    description: 'Suscripción gratuita de 1 mes al servicio Sevici.',
+    cost: 2500,
     type: 'collaboration',
-    previewValue: 'bg-emerald-600 text-white'
+    previewValue: 'bg-red-600 text-white'
   },
   {
     id: 'collab_lipasam',
@@ -392,12 +391,12 @@ export const COLLAB_ITEMS: ShopItem[] = [
     previewValue: 'bg-blue-700 text-white'
   },
   {
-    id: 'collab_sevici',
-    name: 'Mes Sevici',
-    description: 'Suscripción gratuita de 1 mes al servicio Sevici.',
-    cost: 2500,
+    id: 'collab_tussam',
+    name: 'Bonobús Tussam',
+    description: 'Recarga de 7€ para tu tarjeta de transporte Tussam.',
+    cost: 5000,
     type: 'collaboration',
-    previewValue: 'bg-red-600 text-white'
+    previewValue: 'bg-emerald-600 text-white'
   },
   {
     id: 'collab_mercado',
