@@ -821,15 +821,18 @@ const App = () => {
   const handleLogin = (user: User) => {
     setAuthModalOpen(false);
 
-    // Asegurar que las propiedades necesarias estén inicializadas y tengan valores por defecto
-    setUser({
+    // Ensure we don't accidentally reset points or experience to 0 if they exist
+    const fullUser = {
       ...user,
       inventory: user.inventory || [],
       equippedFrame: user.equippedFrame || null,
       equippedBackground: user.equippedBackground || null,
-      points: user.points || 0,
-      experience: user.experience || 0,
-    });
+      points: user.points !== undefined ? user.points : 0,
+      experience: user.experience !== undefined ? user.experience : 0,
+    };
+
+    setUser(fullUser);
+    localStorage.setItem('currentUser', JSON.stringify(fullUser));
 
     // Redirect logic based on role
     if (user.role === UserRole.ADMIN) {
@@ -886,6 +889,8 @@ const App = () => {
       updatedUser.equippedBackground = item.id;
     }
     setUser(updatedUser);
+    localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+    apiSaveUser(updatedUser).catch(err => console.error('Error guardando objeto equipado:', err));
   };
 
   const handleBuyPremium = async () => {
